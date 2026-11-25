@@ -1,8 +1,13 @@
 
 package com.stockflow.controller;
 
+import com.stockflow.dto.ProductRequest;
 import com.stockflow.dto.ProductResponse;
 import com.stockflow.service.ProductService;
+
+import jakarta.validation.Valid;
+
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -35,6 +40,30 @@ public class ProductController {
     @GetMapping("/category/{categoryId}")
     public List<ProductResponse> findByCategory(
             @PathVariable Long categoryId) {
+
         return productService.findByCategory(categoryId);
+    }
+
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    public ProductResponse create(
+            @Valid @RequestBody ProductRequest request) {
+
+        return productService.create(request);
+    }
+
+    @PutMapping("/{id}")
+    public ProductResponse update(
+            @PathVariable Long id,
+            @Valid @RequestBody ProductRequest request) {
+
+        return productService.update(id, request);
+    }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deactivate(@PathVariable Long id) {
+
+        productService.deactivate(id);
     }
 }

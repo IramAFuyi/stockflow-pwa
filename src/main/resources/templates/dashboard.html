@@ -133,9 +133,10 @@
 
                 <p>
                     Hay <b th:text="${lowStock}">0</b>
-                    productos con existencias bajas y
+                    productos que requieren reabastecimiento,
+                    de los cuales
                     <b th:text="${outOfStock}">0</b>
-                    productos agotados.
+                    están agotados.
                 </p>
             </div>
 
@@ -143,12 +144,20 @@
 
         <section class="panel" id="inventory">
 
-            <div class="panel-header">
-                <div>
-                    <h3>Inventario de productos</h3>
-                    <p>Consulta las existencias actuales</p>
-                </div>
+            
+        <div class="panel-header panel-actions">
+            <div>
+                <h3>Inventario de productos</h3>
+                <p>Consulta y administra las existencias actuales</p>
             </div>
+
+            <button type="button"
+                id="new-product"
+                class="btn-primary">
+                + Nuevo producto
+            </button>
+        </div>
+
 
             <div class="filters">
 
@@ -199,6 +208,7 @@
                             <th scope="col">Existencias</th>
                             <th scope="col">Mínimo</th>
                             <th scope="col">Estado</th>
+                            <th scope="col">Acciones</th>
                         </tr>
                     </thead>
 
@@ -248,7 +258,24 @@
                                     Disponible
                                 </span>
                             </td>
+                            <td>
+                                <div class="table-actions">
 
+                                    <button type="button"
+                                            class="btn-edit"
+                                            th:attr="data-id=${product.id}">
+                                        Editar
+                                    </button>
+
+                                    <button type="button"
+                                            class="btn-delete"
+                                            th:attr="data-id=${product.id}"
+                                            th:disabled="${product.stock > 0}">
+                                        Desactivar
+                                    </button>
+
+                                </div>
+                            </td>
                         </tr>
 
                     </tbody>
@@ -268,6 +295,128 @@
         </footer>
 
     </main>
+
+<dialog id="product-modal" class="product-modal">
+
+    <div class="modal-header">
+        <div>
+            <h3 id="modal-title">Registrar producto</h3>
+            <p>Información general del producto</p>
+        </div>
+
+        <button type="button"
+                id="close-modal"
+                class="btn-secondary"
+                aria-label="Cerrar formulario">
+            ✕
+        </button>
+    </div>
+
+    <form id="product-form">
+
+        <input type="hidden" id="product-id">
+        <input type="hidden" id="product-version">
+
+        <div class="form-grid">
+
+            <div class="form-group">
+                <label for="product-sku">Código SKU *</label>
+                <input id="product-sku"
+                       type="text"
+                       maxlength="50"
+                       required>
+            </div>
+
+            <div class="form-group">
+                <label for="product-category">Categoría *</label>
+
+                <select id="product-category" required>
+                    <option value="">Seleccionar categoría</option>
+
+                    <option th:each="category : ${categories}"
+                            th:value="${category.id}"
+                            th:text="${category.name}">
+                    </option>
+                </select>
+            </div>
+
+            <div class="form-group full-width">
+                <label for="product-name">Nombre *</label>
+
+                <input id="product-name"
+                       type="text"
+                       maxlength="150"
+                       required>
+            </div>
+
+            <div class="form-group full-width">
+                <label for="product-description">
+                    Descripción
+                </label>
+
+                <textarea id="product-description"
+                          maxlength="500"
+                          rows="3"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="product-stock">
+                    Existencias actuales
+                </label>
+
+                <input id="product-stock"
+                       type="number"
+                       value="0"
+                       disabled>
+            </div>
+
+            <div class="form-group">
+                <label for="product-min-stock">
+                    Stock mínimo *
+                </label>
+
+                <input id="product-min-stock"
+                       type="number"
+                       min="0"
+                       max="2147483647"
+                       step="1"
+                       value="5"
+                       required>
+            </div>
+
+        </div>
+
+        <p class="form-note">
+            Las existencias se actualizarán mediante
+            entradas y salidas de inventario.
+        </p>
+
+        <p id="form-error"
+           class="form-error"
+           role="alert"
+           hidden></p>
+
+        <div class="modal-actions">
+
+            <button type="button"
+                    id="cancel-product"
+                    class="btn-secondary">
+                Cancelar
+            </button>
+
+            <button type="submit"
+                    id="save-product"
+                    class="btn-primary">
+                Guardar producto
+            </button>
+
+        </div>
+
+    </form>
+
+</dialog>
+
+<script th:src="@{/js/products.js}" defer></script>
 
 </body>
 </html>
