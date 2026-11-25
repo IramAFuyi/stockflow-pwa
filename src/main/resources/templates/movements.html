@@ -12,8 +12,16 @@
     <title>StockFlow | Movimientos</title>
 
     <link rel="stylesheet" th:href="@{/css/styles.css}">
+    <link rel="manifest" th:href="@{/manifest.json}">
 
+    <link rel="icon"
+      type="image/svg+xml"
+      th:href="@{/icons/icon.svg}">
+
+    <link rel="apple-touch-icon"
+      th:href="@{/icons/icon-192.png}">
     <script th:src="@{/js/movements.js}" defer></script>
+    <script th:src="@{/js/pwa.js}" defer></script>
 </head>
 
 <body>
@@ -89,7 +97,23 @@
             </span>
 
         </header>
+<section id="offline-banner"
+         class="alert-banner"
+         role="status"
+         hidden>
 
+    <span class="alert-icon">⚠</span>
+
+    <div>
+        <strong>Modo sin conexión</strong>
+
+        <p>
+            Estás consultando información almacenada previamente.
+            Las existencias pueden estar desactualizadas.
+        </p>
+    </div>
+
+</section>
         <section class="stats-grid movement-stats">
 
             <article class="stat-card blue">
