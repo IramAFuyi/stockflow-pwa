@@ -1,0 +1,26 @@
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: stockflow-db
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB: stockflow_db
+      POSTGRES_USER: stockflow_user
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+
+    ports:
+      - "127.0.0.1:5433:5432"
+
+    volumes:
+      - stockflow_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U stockflow_user -d stockflow_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  stockflow_data:
