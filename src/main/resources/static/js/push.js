@@ -94,7 +94,7 @@
                 );
             }
 
-            const response = await fetch(
+            const response = await stockflowFetch(
                 "/api/push/public-key",
                 { cache: "no-store" }
             );
@@ -135,7 +135,7 @@
 
             const data = subscription.toJSON();
 
-            const saved = await fetch(
+            const saved = await stockflowFetch(
                 "/api/push/subscribe",
                 {
                     method: "POST",
@@ -187,7 +187,7 @@
 
             if (subscription) {
 
-                const response = await fetch(
+                const response = await stockflowFetch(
                     "/api/push/subscribe",
                     {
                         method: "DELETE",

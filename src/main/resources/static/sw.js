@@ -1,5 +1,5 @@
 
-const CACHE_NAME = "stockflow-v6";
+const CACHE_NAME = "stockflow-v7";
 
 const STATIC_RESOURCES = [
     "/offline.html",
@@ -17,6 +17,7 @@ const STATIC_RESOURCES = [
     "/js/offline-data.js",
     "/js/sync.js",
     "/js/push.js",
+    "/js/security.js",
 ];
 
 const SSR_PAGES = [
@@ -151,21 +152,18 @@ self.addEventListener("fetch", event => {
     }
 
     // Vistas SSR.
+    // Las vistas autenticadas no se almacenan en cache.
     if (request.mode === "navigate") {
 
-        if (SSR_PAGES.includes(url.pathname)) {
+        event.respondWith(
+            fetch(request, {
+                cache: "no-store"
+            }).catch(async () => {
 
-            event.respondWith(networkFirst(request));
-
-        } else {
-
-            event.respondWith(
-
-                fetch(request).catch(() =>
-                    caches.match("/offline.html")
-                )
-            );
-        }
+                return await caches.match("/offline.html")
+                    || Response.error();
+            })
+        );
 
         return;
     }

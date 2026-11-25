@@ -16,6 +16,7 @@
 
     <link rel="apple-touch-icon" th:href="@{/icons/icon-192.png}">
 
+    <script th:src="@{/js/security.js}" defer></script>
     <script th:src="@{/js/dashboard.js}" defer></script>
     <script th:src="@{/js/indexed-db.js}" defer></script>
     <script th:src="@{/js/offline-data.js}" defer></script>
@@ -69,6 +70,17 @@
         </nav>
 
         <div class="sidebar-footer">
+            <div class="session-info">
+
+                <form th:action="@{/logout}" method="post">
+
+                    <button type="submit" class="btn-secondary">
+                        Cerrar sesión
+                    </button>
+
+                </form>
+
+            </div>
             <span>StockFlow v1.0</span>
             <small>Proyecto académico PWA</small>
         </div>

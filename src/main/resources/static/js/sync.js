@@ -72,7 +72,7 @@ const StockFlowSync = (() => {
 
         try {
 
-            const response = await fetch(
+            const response = await stockflowFetch(
                 "/api/movements",
                 {
                     method: "POST",
