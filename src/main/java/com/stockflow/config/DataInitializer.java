@@ -10,6 +10,8 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import com.stockflow.model.Department;
+import com.stockflow.repository.DepartmentRepository;
 
 @Component
 @ConditionalOnProperty(
@@ -20,13 +22,17 @@ public class DataInitializer implements CommandLineRunner {
 
     private final CategoryRepository categoryRepository;
     private final ProductRepository productRepository;
+    private final DepartmentRepository departmentRepository;
 
     public DataInitializer(
-            CategoryRepository categoryRepository,
-            ProductRepository productRepository) {
-        this.categoryRepository = categoryRepository;
-        this.productRepository = productRepository;
-    }
+        CategoryRepository categoryRepository,
+        ProductRepository productRepository,
+        DepartmentRepository departmentRepository) {
+
+    this.categoryRepository = categoryRepository;
+    this.productRepository = productRepository;
+    this.departmentRepository = departmentRepository;
+}
 
     @Override
     @Transactional
@@ -112,6 +118,15 @@ public class DataInitializer implements CommandLineRunner {
 
         createProduct("CMP-002", "Fuente de poder 500 W",
             "Fuente de alimentacion ATX", 4, 3, components);
+        
+        createDepartment("Sistemas", "Soporte e infraestructura TI");
+        createDepartment("Administracion", "Gestion administrativa");
+        createDepartment("Contabilidad", "Control financiero");
+        createDepartment("Direccion", "Direccion general");
+        createDepartment("Ventas", "Area comercial");
+        createDepartment("Compras", "Adquisicion de materiales");
+        createDepartment("Almacen", "Control de mercancia");
+        createDepartment("Logistica", "Distribucion y transporte");
     }
 
     private Category createCategory(
@@ -146,5 +161,14 @@ public class DataInitializer implements CommandLineRunner {
         product.setActive(true);
 
         productRepository.save(product);
+    }
+    
+    private Department createDepartment(
+            String name, String description) {
+
+        return departmentRepository.findByNameIgnoreCase(name)
+            .orElseGet(() -> departmentRepository.save(
+                new Department(name, description)
+            ));
     }
 }

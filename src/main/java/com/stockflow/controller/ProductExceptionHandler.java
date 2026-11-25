@@ -11,7 +11,10 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.Map;
 
 @RestControllerAdvice(
-    assignableTypes = ProductController.class
+    assignableTypes = {
+        ProductController.class,
+        StockMovementController.class
+    }
 )
 public class ProductExceptionHandler {
 
