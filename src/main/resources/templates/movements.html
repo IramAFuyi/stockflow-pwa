@@ -1,11 +1,9 @@
-
 <!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <meta name="theme-color" content="#0f172a">
 
@@ -14,18 +12,15 @@
     <link rel="stylesheet" th:href="@{/css/styles.css}">
     <link rel="manifest" th:href="@{/manifest.json}">
 
-    <link rel="icon"
-      type="image/svg+xml"
-      th:href="@{/icons/icon.svg}">
+    <link rel="icon" type="image/svg+xml" th:href="@{/icons/icon.svg}">
 
-    <link rel="apple-touch-icon"
-      th:href="@{/icons/icon-192.png}">
+    <link rel="apple-touch-icon" th:href="@{/icons/icon-192.png}">
     <script th:src="@{/js/movements.js}" defer></script>
     <script th:src="@{/js/indexed-db.js}" defer></script>
     <script th:src="@{/js/offline-data.js}" defer></script>
     <script th:src="@{/js/sync.js}" defer></script>
     <script th:src="@{/js/pwa.js}" defer></script>
-        
+
 </head>
 
 <body>
@@ -63,9 +58,9 @@
                 🏢 Departamentos
             </span>
 
-            <span class="nav-link disabled">
+            <a th:href="@{/#notifications}" class="nav-link">
                 🔔 Notificaciones
-            </span>
+            </a>
 
             <span class="nav-link disabled">
                 ⚙ Configuración
@@ -83,10 +78,7 @@
 
         <header class="topbar">
 
-            <button id="menu-toggle"
-                    class="menu-toggle"
-                    aria-label="Abrir menú"
-                    aria-expanded="false">
+            <button id="menu-toggle" class="menu-toggle" aria-label="Abrir menú" aria-expanded="false">
                 ☰
             </button>
 
@@ -95,56 +87,48 @@
                 <p>Control de entradas y salidas de mercancía</p>
             </div>
 
-            <span id="connection-status"
-                  class="connection-status">
+            <span id="connection-status" class="connection-status">
                 Verificando conexión
             </span>
 
         </header>
-<section id="offline-banner"
-         class="alert-banner"
-         role="status"
-         hidden>
+        <section id="offline-banner" class="alert-banner" role="status" hidden>
 
-    <span class="alert-icon">⚠</span>
+            <span class="alert-icon">⚠</span>
 
-    <div>
-        <strong>Modo sin conexión</strong>
+            <div>
+                <strong>Modo sin conexión</strong>
 
-        <p>
-            Estás consultando información almacenada previamente.
-            Las existencias pueden estar desactualizadas.
-        </p>
-    </div>
+                <p>
+                    Estás consultando información almacenada previamente.
+                    Las existencias pueden estar desactualizadas.
+                </p>
+            </div>
 
-</section>
-<section id="sync-panel"
-         class="sync-panel"
-         aria-label="Sincronizacion de movimientos">
+        </section>
+        <section id="sync-panel" class="sync-panel" aria-label="Sincronizacion de movimientos">
 
-    <div class="sync-header">
+            <div class="sync-header">
 
-        <div>
-            <strong>⇄ Sincronización de inventario</strong>
+                <div>
+                    <strong>⇄ Sincronización de inventario</strong>
 
-            <p id="sync-status" aria-live="polite">
-                Comprobando operaciones pendientes...
-            </p>
-        </div>
+                    <p id="sync-status" aria-live="polite">
+                        Comprobando operaciones pendientes...
+                    </p>
+                </div>
 
-        <button type="button"
-                id="sync-now"
-                class="btn-secondary">
-            Sincronizar ahora
-        </button>
+                <button type="button" id="sync-now" class="btn-secondary">
+                    Sincronizar ahora
+                </button>
 
-    </div>
+            </div>
 
-    <p id="last-sync"></p>
+            <p id="last-sync"></p>
 
-    <div id="pending-list"></div>
+            <div id="pending-list"></div>
 
-</section>
+        </section>
 
         <section class="stats-grid movement-stats">
 
@@ -180,9 +164,7 @@
                     <p>Consulta las operaciones del inventario</p>
                 </div>
 
-                <button id="new-movement"
-                        type="button"
-                        class="btn-primary">
+                <button id="new-movement" type="button" class="btn-primary">
                     + Nuevo movimiento
                 </button>
 
@@ -190,13 +172,10 @@
 
             <div class="filters">
 
-                <input type="search"
-                       id="movement-search"
-                       aria-label="Buscar movimiento"
-                       placeholder="Buscar producto, SKU o departamento...">
+                <input type="search" id="movement-search" aria-label="Buscar movimiento"
+                    placeholder="Buscar producto, SKU o departamento...">
 
-                <select id="movement-filter"
-                        aria-label="Filtrar tipo de movimiento">
+                <select id="movement-filter" aria-label="Filtrar tipo de movimiento">
 
                     <option value="all">Todos los tipos</option>
                     <option value="IN">Entradas</option>
@@ -227,30 +206,25 @@
 
                     <tbody id="movement-table">
 
-                        <tr th:each="m : ${movements}"
-                            th:attr="data-type=${m.type}">
+                        <tr th:each="m : ${movements}" th:attr="data-type=${m.type}">
 
-                            <td class="movement-date"
-                                th:text="${m.createdAt}">
+                            <td class="movement-date" th:text="${m.createdAt}">
                             </td>
 
                             <td>
                                 <strong th:text="${m.productName}">
                                 </strong>
 
-                                <small class="product-description"
-                                       th:text="${m.sku}">
+                                <small class="product-description" th:text="${m.sku}">
                                 </small>
                             </td>
 
                             <td>
-                                <span th:if="${m.type.name() == 'IN'}"
-                                      class="status-badge available">
+                                <span th:if="${m.type.name() == 'IN'}" class="status-badge available">
                                     Entrada
                                 </span>
 
-                                <span th:if="${m.type.name() == 'OUT'}"
-                                      class="status-badge low">
+                                <span th:if="${m.type.name() == 'OUT'}" class="status-badge low">
                                     Salida
                                 </span>
                             </td>
@@ -267,13 +241,11 @@
                             <td>
 
                                 <span th:if="${m.latitude != null
-                                             and m.longitude != null}"
-                                      th:text="|${m.latitude}, ${m.longitude}|">
+                                             and m.longitude != null}" th:text="|${m.latitude}, ${m.longitude}|">
                                 </span>
 
                                 <span th:if="${m.latitude == null
-                                             or m.longitude == null}"
-                                      class="product-description">
+                                             or m.longitude == null}" class="product-description">
                                     Sin ubicación
                                 </span>
 
@@ -301,9 +273,7 @@
 
     </main>
 
-    <dialog id="movement-modal"
-            class="product-modal"
-            aria-labelledby="movement-title">
+    <dialog id="movement-modal" class="product-modal" aria-labelledby="movement-title">
 
         <div class="modal-header">
 
@@ -312,10 +282,7 @@
                 <p>Registra una entrada o salida de mercancía</p>
             </div>
 
-            <button type="button"
-                    id="close-movement"
-                    class="btn-secondary"
-                    aria-label="Cerrar">
+            <button type="button" id="close-movement" class="btn-secondary" aria-label="Cerrar">
                 ✕
             </button>
 
@@ -339,10 +306,8 @@
                                 Seleccionar producto
                             </option>
 
-                            <option th:each="p : ${products}"
-                                    th:value="${p.id}"
-                                    th:attr="data-stock=${p.stock}"
-                                    th:text="|${p.sku} - ${p.name}|">
+                            <option th:each="p : ${products}" th:value="${p.id}" th:attr="data-stock=${p.stock}"
+                                th:text="|${p.sku} - ${p.name}|">
                             </option>
 
                         </select>
@@ -368,13 +333,8 @@
                             Cantidad *
                         </label>
 
-                        <input id="movement-quantity"
-                               type="number"
-                               min="1"
-                               max="2147483647"
-                               step="1"
-                               value="1"
-                               required>
+                        <input id="movement-quantity" type="number" min="1" max="2147483647" step="1" value="1"
+                            required>
 
                     </div>
 
@@ -390,9 +350,7 @@
                                 Sin departamento
                             </option>
 
-                            <option th:each="d : ${departments}"
-                                    th:value="${d.id}"
-                                    th:text="${d.name}">
+                            <option th:each="d : ${departments}" th:value="${d.id}" th:text="${d.name}">
                             </option>
 
                         </select>
@@ -405,9 +363,7 @@
                             Stock local estimado
                         </label>
 
-                        <input id="current-stock"
-                               type="text"
-                               readonly>
+                        <input id="current-stock" type="text" readonly>
 
                     </div>
 
@@ -417,9 +373,7 @@
                             Stock resultante estimado
                         </label>
 
-                        <input id="resulting-stock"
-                               type="text"
-                               readonly>
+                        <input id="resulting-stock" type="text" readonly>
 
                     </div>
 
@@ -429,9 +383,7 @@
                             Observaciones
                         </label>
 
-                        <textarea id="movement-observations"
-                                  rows="3"
-                                  maxlength="500"></textarea>
+                        <textarea id="movement-observations" rows="3" maxlength="500"></textarea>
 
                     </div>
 
@@ -448,15 +400,11 @@
 
                     <div class="location-actions">
 
-                        <button type="button"
-                                id="get-location"
-                                class="btn-secondary">
+                        <button type="button" id="get-location" class="btn-secondary">
                             Obtener ubicación
                         </button>
 
-                        <button type="button"
-                                id="clear-location"
-                                class="btn-secondary">
+                        <button type="button" id="clear-location" class="btn-secondary">
                             Quitar ubicación
                         </button>
 
@@ -470,22 +418,15 @@
 
             </fieldset>
 
-            <p id="movement-error"
-               class="form-error"
-               role="alert"
-               hidden></p>
+            <p id="movement-error" class="form-error" role="alert" hidden></p>
 
             <div class="modal-actions">
 
-                <button type="button"
-                        id="cancel-movement"
-                        class="btn-secondary">
+                <button type="button" id="cancel-movement" class="btn-secondary">
                     Cancelar
                 </button>
 
-                <button type="submit"
-                        id="save-movement"
-                        class="btn-primary">
+                <button type="submit" id="save-movement" class="btn-primary">
                     Registrar movimiento
                 </button>
 
@@ -496,4 +437,5 @@
     </dialog>
 
 </body>
+
 </html>

@@ -14,6 +14,9 @@ import org.springframework.http.HttpStatus;
 import java.util.List;
 import java.util.Objects;
 
+import com.stockflow.event.LowStockEvent;
+import org.springframework.context.ApplicationEventPublisher;
+
 @Service
 @Transactional(readOnly = true)
 public class StockMovementService {
@@ -21,15 +24,18 @@ public class StockMovementService {
     private final StockMovementRepository movementRepository;
     private final ProductRepository productRepository;
     private final DepartmentRepository departmentRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     public StockMovementService(
             StockMovementRepository movementRepository,
             ProductRepository productRepository,
-            DepartmentRepository departmentRepository) {
+            DepartmentRepository departmentRepository,
+            ApplicationEventPublisher eventPublisher) {
 
         this.movementRepository = movementRepository;
         this.productRepository = productRepository;
         this.departmentRepository = departmentRepository;
+        this.eventPublisher = eventPublisher;
     }
 
     public List<MovementResponse> findAll() {
@@ -48,9 +54,8 @@ public class StockMovementService {
         Product product = productRepository
                 .findByIdForUpdate(request.productId())
                 .orElseThrow(() -> new ResponseStatusException(
-                    HttpStatus.NOT_FOUND,
-                    "Producto no encontrado"
-                ));
+                        HttpStatus.NOT_FOUND,
+                        "Producto no encontrado"));
 
         // Comprobar si la operacion ya fue registrada
         var existing = movementRepository
@@ -67,18 +72,16 @@ public class StockMovementService {
 
         if (!product.isActive()) {
             throw new ResponseStatusException(
-                HttpStatus.CONFLICT,
-                "El producto esta desactivado"
-            );
+                    HttpStatus.CONFLICT,
+                    "El producto esta desactivado");
         }
 
         if (request.quantity() == null ||
                 request.quantity() <= 0) {
 
             throw new ResponseStatusException(
-                HttpStatus.BAD_REQUEST,
-                "La cantidad debe ser mayor que cero"
-            );
+                    HttpStatus.BAD_REQUEST,
+                    "La cantidad debe ser mayor que cero");
         }
 
         Department department = null;
@@ -86,29 +89,25 @@ public class StockMovementService {
         if (request.departmentId() != null) {
 
             department = departmentRepository
-                .findById(request.departmentId())
-                .orElseThrow(() -> new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "El departamento no existe"
-                ));
+                    .findById(request.departmentId())
+                    .orElseThrow(() -> new ResponseStatusException(
+                            HttpStatus.BAD_REQUEST,
+                            "El departamento no existe"));
         }
 
         if (request.type() == MovementType.OUT &&
                 department == null) {
 
             throw new ResponseStatusException(
-                HttpStatus.BAD_REQUEST,
-                "Indica el departamento receptor"
-            );
+                    HttpStatus.BAD_REQUEST,
+                    "Indica el departamento receptor");
         }
 
-        if ((request.latitude() == null) !=
-                (request.longitude() == null)) {
+        if ((request.latitude() == null) != (request.longitude() == null)) {
 
             throw new ResponseStatusException(
-                HttpStatus.BAD_REQUEST,
-                "Las coordenadas deben enviarse juntas"
-            );
+                    HttpStatus.BAD_REQUEST,
+                    "Las coordenadas deben enviarse juntas");
         }
 
         int previousStock = product.getStock();
@@ -117,29 +116,25 @@ public class StockMovementService {
 
         if (request.type() == MovementType.IN) {
 
-            calculatedStock =
-                (long) previousStock + request.quantity();
+            calculatedStock = (long) previousStock + request.quantity();
 
         } else {
 
-            calculatedStock =
-                (long) previousStock - request.quantity();
+            calculatedStock = (long) previousStock - request.quantity();
         }
 
         if (calculatedStock < 0) {
 
             throw new ResponseStatusException(
-                HttpStatus.CONFLICT,
-                "Existencias insuficientes"
-            );
+                    HttpStatus.CONFLICT,
+                    "Existencias insuficientes");
         }
 
         if (calculatedStock > Integer.MAX_VALUE) {
 
             throw new ResponseStatusException(
-                HttpStatus.BAD_REQUEST,
-                "Se excede el limite de existencias"
-            );
+                    HttpStatus.BAD_REQUEST,
+                    "Se excede el limite de existencias");
         }
 
         int resultingStock = (int) calculatedStock;
@@ -149,21 +144,33 @@ public class StockMovementService {
         productRepository.save(product);
 
         StockMovement movement = new StockMovement(
-            request.operationUuid(),
-            product,
-            department,
-            request.type(),
-            request.quantity(),
-            previousStock,
-            resultingStock,
-            request.observations(),
-            request.latitude(),
-            request.longitude()
-        );
+                request.operationUuid(),
+                product,
+                department,
+                request.type(),
+                request.quantity(),
+                previousStock,
+                resultingStock,
+                request.observations(),
+                request.latitude(),
+                request.longitude());
 
-        return MovementResponse.from(
-            movementRepository.saveAndFlush(movement)
-        );
+        StockMovement savedMovement = movementRepository.saveAndFlush(movement);
+
+        // Notificar solamente al cruzar el stock minimo.
+        if (previousStock > product.getMinStock()
+                && resultingStock <= product.getMinStock()) {
+
+            eventPublisher.publishEvent(
+                    new LowStockEvent(
+                            product.getId(),
+                            product.getSku(),
+                            product.getName(),
+                            resultingStock,
+                            product.getMinStock()));
+        }
+
+        return MovementResponse.from(savedMovement);
     }
 
     private void validateRepeatedOperation(
@@ -171,39 +178,32 @@ public class StockMovementService {
             MovementRequest request) {
 
         Long departmentId = movement.getDepartment() != null
-            ? movement.getDepartment().getId()
-            : null;
+                ? movement.getDepartment().getId()
+                : null;
 
-        boolean sameOperation =
-            Objects.equals(
+        boolean sameOperation = Objects.equals(
                 movement.getProduct().getId(),
-                request.productId()
-            )
-            && Objects.equals(
-                departmentId,
-                request.departmentId()
-            )
-            && movement.getType() == request.type()
-            && movement.getQuantity() == request.quantity()
-            && Objects.equals(
-                movement.getObservations(),
-                request.observations()
-            )
-            && Objects.equals(
-                movement.getLatitude(),
-                request.latitude()
-            )
-            && Objects.equals(
-                movement.getLongitude(),
-                request.longitude()
-            );
+                request.productId())
+                && Objects.equals(
+                        departmentId,
+                        request.departmentId())
+                && movement.getType() == request.type()
+                && movement.getQuantity() == request.quantity()
+                && Objects.equals(
+                        movement.getObservations(),
+                        request.observations())
+                && Objects.equals(
+                        movement.getLatitude(),
+                        request.latitude())
+                && Objects.equals(
+                        movement.getLongitude(),
+                        request.longitude());
 
         if (!sameOperation) {
 
             throw new ResponseStatusException(
-                HttpStatus.CONFLICT,
-                "El identificador pertenece a otra operacion"
-            );
+                    HttpStatus.CONFLICT,
+                    "El identificador pertenece a otra operacion");
         }
     }
 }

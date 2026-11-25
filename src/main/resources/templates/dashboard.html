@@ -1,32 +1,27 @@
-
 <!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#0f172a">
-    <meta name="description"
-          content="StockFlow - Sistema de inventario informático">
+    <meta name="description" content="StockFlow - Sistema de inventario informático">
 
     <title>StockFlow | Dashboard</title>
 
     <link rel="stylesheet" th:href="@{/css/styles.css}">
     <link rel="manifest" th:href="@{/manifest.json}">
 
-    <link rel="icon"
-      type="image/svg+xml"
-      th:href="@{/icons/icon.svg}">
+    <link rel="icon" type="image/svg+xml" th:href="@{/icons/icon.svg}">
 
-    <link rel="apple-touch-icon"
-      th:href="@{/icons/icon-192.png}">
+    <link rel="apple-touch-icon" th:href="@{/icons/icon-192.png}">
 
     <script th:src="@{/js/dashboard.js}" defer></script>
     <script th:src="@{/js/indexed-db.js}" defer></script>
     <script th:src="@{/js/offline-data.js}" defer></script>
     <script th:src="@{/js/sync.js}" defer></script>
     <script th:src="@{/js/pwa.js}" defer></script>
+    <script th:src="@{/js/push.js}" defer></script>
 </head>
 
 <body>
@@ -64,9 +59,9 @@
                 🏢 Departamentos
             </span>
 
-            <span class="nav-link disabled">
+            <a href="#notifications" class="nav-link">
                 🔔 Notificaciones
-            </span>
+            </a>
 
             <span class="nav-link disabled">
                 ⚙ Configuración
@@ -84,10 +79,7 @@
 
         <header class="topbar">
 
-            <button id="menu-toggle"
-                    class="menu-toggle"
-                    aria-label="Abrir menú"
-                    aria-expanded="false">
+            <button id="menu-toggle" class="menu-toggle" aria-label="Abrir menú" aria-expanded="false">
                 ☰
             </button>
 
@@ -96,60 +88,83 @@
                 <p>Control de equipos y consumibles informáticos</p>
             </div>
 
-            <span id="connection-status"
-                  class="connection-status">
+            <span id="connection-status" class="connection-status">
                 Verificando conexión
             </span>
 
         </header>
-<section id="offline-banner"
-         class="alert-banner"
-         role="status"
-         hidden>
+        <section id="offline-banner" class="alert-banner" role="status" hidden>
 
-    <span class="alert-icon">⚠</span>
+            <span class="alert-icon">⚠</span>
 
-    <div>
-        <strong>Modo sin conexión</strong>
+            <div>
+                <strong>Modo sin conexión</strong>
 
-        <p>
-            Estás consultando información almacenada previamente.
-            Las existencias pueden estar desactualizadas.
-        </p>
-    </div>
+                <p>
+                    Estás consultando información almacenada previamente.
+                    Las existencias pueden estar desactualizadas.
+                </p>
+            </div>
 
-</section>
+        </section>
 
-<section id="sync-panel"
-         class="sync-panel"
-         aria-label="Sincronizacion de movimientos">
+        <section id="sync-panel" class="sync-panel" aria-label="Sincronizacion de movimientos">
 
-    <div class="sync-header">
+            <div class="sync-header">
 
-        <div>
-            <strong>⇄ Sincronización de inventario</strong>
+                <div>
+                    <strong>⇄ Sincronización de inventario</strong>
 
-            <p id="sync-status" aria-live="polite">
-                Comprobando operaciones pendientes...
+                    <p id="sync-status" aria-live="polite">
+                        Comprobando operaciones pendientes...
+                    </p>
+                </div>
+
+                <button type="button" id="sync-now" class="btn-secondary">
+                    Sincronizar ahora
+                </button>
+
+            </div>
+
+            <p id="last-sync"></p>
+
+            <div id="pending-list"></div>
+
+        </section>
+        <section class="sync-panel" id="notifications">
+
+            <div class="sync-header">
+
+                <div>
+                    <strong>🔔 Notificaciones de inventario</strong>
+
+                    <p id="push-status" aria-live="polite">
+                        Comprobando notificaciones...
+                    </p>
+                </div>
+
+                <div class="notification-actions">
+
+                    <button type="button" id="enable-push" class="btn-primary" disabled>
+                        Activar notificaciones
+                    </button>
+
+                    <button type="button" id="disable-push" class="btn-secondary" disabled>
+                        Desactivar
+                    </button>
+
+                </div>
+
+            </div>
+
+            <p class="form-note">
+                Recibe alertas cuando un producto alcance
+                su stock mínimo.
             </p>
-        </div>
 
-        <button type="button"
-                id="sync-now"
-                class="btn-secondary">
-            Sincronizar ahora
-        </button>
+        </section>
 
-    </div>
-
-    <p id="last-sync"></p>
-
-    <div id="pending-list"></div>
-
-</section>
-
-        <section class="stats-grid"
-                 aria-label="Indicadores del inventario">
+        <section class="stats-grid" aria-label="Indicadores del inventario">
 
             <article class="stat-card blue">
                 <span class="stat-icon">📦</span>
@@ -181,8 +196,7 @@
 
         </section>
 
-        <section class="alert-banner"
-                 th:if="${lowStock > 0}">
+        <section class="alert-banner" th:if="${lowStock > 0}">
 
             <span class="alert-icon">⚠</span>
 
@@ -202,44 +216,35 @@
 
         <section class="panel" id="inventory">
 
-            
-        <div class="panel-header panel-actions">
-            <div>
-                <h3>Inventario de productos</h3>
-                <p>Consulta y administra las existencias actuales</p>
-            </div>
 
-            <button type="button"
-                id="new-product"
-                class="btn-primary">
-                + Nuevo producto
-            </button>
-        </div>
+            <div class="panel-header panel-actions">
+                <div>
+                    <h3>Inventario de productos</h3>
+                    <p>Consulta y administra las existencias actuales</p>
+                </div>
+
+                <button type="button" id="new-product" class="btn-primary">
+                    + Nuevo producto
+                </button>
+            </div>
 
 
             <div class="filters">
 
-                <input type="search"
-                       id="search"
-                       aria-label="Buscar producto"
-                       placeholder="Buscar por nombre o SKU...">
+                <input type="search" id="search" aria-label="Buscar producto" placeholder="Buscar por nombre o SKU...">
 
-                <select id="category-filter"
-                        aria-label="Filtrar por categoría">
+                <select id="category-filter" aria-label="Filtrar por categoría">
 
                     <option value="all">
                         Todas las categorías
                     </option>
 
-                    <option th:each="category : ${categories}"
-                            th:value="${category.id}"
-                            th:text="${category.name}">
+                    <option th:each="category : ${categories}" th:value="${category.id}" th:text="${category.name}">
                     </option>
 
                 </select>
 
-                <select id="stock-filter"
-                        aria-label="Filtrar por existencias">
+                <select id="stock-filter" aria-label="Filtrar por existencias">
 
                     <option value="all">Todos los estados</option>
                     <option value="available">Disponible</option>
@@ -250,8 +255,7 @@
 
             </div>
 
-            <p id="result-count" aria-live="polite"
-               th:text="|${totalProducts} productos encontrados|">
+            <p id="result-count" aria-live="polite" th:text="|${totalProducts} productos encontrados|">
             </p>
 
             <div class="table-container">
@@ -272,21 +276,18 @@
 
                     <tbody id="product-table">
 
-                        <tr th:each="product : ${products}"
-                            th:attr="data-category=${product.categoryId},
+                        <tr th:each="product : ${products}" th:attr="data-category=${product.categoryId},
                             data-stock=${product.stock},
                             data-min=${product.minStock}">
 
-                            <td class="sku"
-                                th:text="${product.sku}">
+                            <td class="sku" th:text="${product.sku}">
                             </td>
 
                             <td>
                                 <strong th:text="${product.name}">
                                 </strong>
 
-                                <small class="product-description"
-                                       th:text="${product.description}">
+                                <small class="product-description" th:text="${product.description}">
                                 </small>
                             </td>
 
@@ -300,35 +301,28 @@
                             </td>
 
                             <td>
-                                <span th:if="${product.stock == 0}"
-                                      class="status-badge empty">
+                                <span th:if="${product.stock == 0}" class="status-badge empty">
                                     Agotado
                                 </span>
 
                                 <span th:if="${product.stock > 0
-                                               and product.lowStock}"
-                                      class="status-badge low">
+                                               and product.lowStock}" class="status-badge low">
                                     Stock bajo
                                 </span>
 
-                                <span th:if="${!product.lowStock}"
-                                      class="status-badge available">
+                                <span th:if="${!product.lowStock}" class="status-badge available">
                                     Disponible
                                 </span>
                             </td>
                             <td>
                                 <div class="table-actions">
 
-                                    <button type="button"
-                                            class="btn-edit"
-                                            th:attr="data-id=${product.id}">
+                                    <button type="button" class="btn-edit" th:attr="data-id=${product.id}">
                                         Editar
                                     </button>
 
-                                    <button type="button"
-                                            class="btn-delete"
-                                            th:attr="data-id=${product.id}"
-                                            th:disabled="${product.stock > 0}">
+                                    <button type="button" class="btn-delete" th:attr="data-id=${product.id}"
+                                        th:disabled="${product.stock > 0}">
                                         Desactivar
                                     </button>
 
@@ -354,127 +348,99 @@
 
     </main>
 
-<dialog id="product-modal" class="product-modal">
+    <dialog id="product-modal" class="product-modal">
 
-    <div class="modal-header">
-        <div>
-            <h3 id="modal-title">Registrar producto</h3>
-            <p>Información general del producto</p>
-        </div>
-
-        <button type="button"
-                id="close-modal"
-                class="btn-secondary"
-                aria-label="Cerrar formulario">
-            ✕
-        </button>
-    </div>
-
-    <form id="product-form">
-
-        <input type="hidden" id="product-id">
-        <input type="hidden" id="product-version">
-
-        <div class="form-grid">
-
-            <div class="form-group">
-                <label for="product-sku">Código SKU *</label>
-                <input id="product-sku"
-                       type="text"
-                       maxlength="50"
-                       required>
+        <div class="modal-header">
+            <div>
+                <h3 id="modal-title">Registrar producto</h3>
+                <p>Información general del producto</p>
             </div>
 
-            <div class="form-group">
-                <label for="product-category">Categoría *</label>
-
-                <select id="product-category" required>
-                    <option value="">Seleccionar categoría</option>
-
-                    <option th:each="category : ${categories}"
-                            th:value="${category.id}"
-                            th:text="${category.name}">
-                    </option>
-                </select>
-            </div>
-
-            <div class="form-group full-width">
-                <label for="product-name">Nombre *</label>
-
-                <input id="product-name"
-                       type="text"
-                       maxlength="150"
-                       required>
-            </div>
-
-            <div class="form-group full-width">
-                <label for="product-description">
-                    Descripción
-                </label>
-
-                <textarea id="product-description"
-                          maxlength="500"
-                          rows="3"></textarea>
-            </div>
-
-            <div class="form-group">
-                <label for="product-stock">
-                    Existencias actuales
-                </label>
-
-                <input id="product-stock"
-                       type="number"
-                       value="0"
-                       disabled>
-            </div>
-
-            <div class="form-group">
-                <label for="product-min-stock">
-                    Stock mínimo *
-                </label>
-
-                <input id="product-min-stock"
-                       type="number"
-                       min="0"
-                       max="2147483647"
-                       step="1"
-                       value="5"
-                       required>
-            </div>
-
-        </div>
-
-        <p class="form-note">
-            Las existencias se actualizarán mediante
-            entradas y salidas de inventario.
-        </p>
-
-        <p id="form-error"
-           class="form-error"
-           role="alert"
-           hidden></p>
-
-        <div class="modal-actions">
-
-            <button type="button"
-                    id="cancel-product"
-                    class="btn-secondary">
-                Cancelar
+            <button type="button" id="close-modal" class="btn-secondary" aria-label="Cerrar formulario">
+                ✕
             </button>
-
-            <button type="submit"
-                    id="save-product"
-                    class="btn-primary">
-                Guardar producto
-            </button>
-
         </div>
 
-    </form>
+        <form id="product-form">
 
-</dialog>
+            <input type="hidden" id="product-id">
+            <input type="hidden" id="product-version">
 
-<script th:src="@{/js/products.js}" defer></script>
+            <div class="form-grid">
+
+                <div class="form-group">
+                    <label for="product-sku">Código SKU *</label>
+                    <input id="product-sku" type="text" maxlength="50" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="product-category">Categoría *</label>
+
+                    <select id="product-category" required>
+                        <option value="">Seleccionar categoría</option>
+
+                        <option th:each="category : ${categories}" th:value="${category.id}" th:text="${category.name}">
+                        </option>
+                    </select>
+                </div>
+
+                <div class="form-group full-width">
+                    <label for="product-name">Nombre *</label>
+
+                    <input id="product-name" type="text" maxlength="150" required>
+                </div>
+
+                <div class="form-group full-width">
+                    <label for="product-description">
+                        Descripción
+                    </label>
+
+                    <textarea id="product-description" maxlength="500" rows="3"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="product-stock">
+                        Existencias actuales
+                    </label>
+
+                    <input id="product-stock" type="number" value="0" disabled>
+                </div>
+
+                <div class="form-group">
+                    <label for="product-min-stock">
+                        Stock mínimo *
+                    </label>
+
+                    <input id="product-min-stock" type="number" min="0" max="2147483647" step="1" value="5" required>
+                </div>
+
+            </div>
+
+            <p class="form-note">
+                Las existencias se actualizarán mediante
+                entradas y salidas de inventario.
+            </p>
+
+            <p id="form-error" class="form-error" role="alert" hidden></p>
+
+            <div class="modal-actions">
+
+                <button type="button" id="cancel-product" class="btn-secondary">
+                    Cancelar
+                </button>
+
+                <button type="submit" id="save-product" class="btn-primary">
+                    Guardar producto
+                </button>
+
+            </div>
+
+        </form>
+
+    </dialog>
+
+    <script th:src="@{/js/products.js}" defer></script>
 
 </body>
+
 </html>

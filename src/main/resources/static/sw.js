@@ -1,5 +1,5 @@
 
-const CACHE_NAME = "stockflow-v5";
+const CACHE_NAME = "stockflow-v6";
 
 const STATIC_RESOURCES = [
     "/offline.html",
@@ -16,6 +16,7 @@ const STATIC_RESOURCES = [
     "/js/indexed-db.js",
     "/js/offline-data.js",
     "/js/sync.js",
+    "/js/push.js",
 ];
 
 const SSR_PAGES = [
@@ -183,3 +184,59 @@ self.addEventListener("fetch", event => {
         event.respondWith(cacheFirst(request));
     }
 });
+
+// ===================================
+// Notificaciones Web Push
+// ===================================
+
+self.addEventListener("push", event => {
+
+    const message = event.data
+        ? event.data.text()
+        : "Consulta las alertas de inventario.";
+
+    event.waitUntil(
+
+        self.registration.showNotification(
+            "StockFlow | Alerta de inventario",
+            {
+                body: message,
+                icon: "/icons/icon-192.png",
+                badge: "/icons/icon-192.png",
+                data: {
+                    url: "/"
+                }
+            }
+        )
+    );
+});
+
+// Abrir StockFlow al pulsar la notificacion.
+
+self.addEventListener("notificationclick", event => {
+
+    event.notification.close();
+
+    event.waitUntil((async () => {
+
+        const windows = await self.clients.matchAll({
+            type: "window",
+            includeUncontrolled: true
+        });
+
+        const target =
+            new URL("/", self.location.origin).href;
+
+        for (const client of windows) {
+
+            if (client.url === target) {
+
+                return client.focus();
+            }
+        }
+
+        return self.clients.openWindow(target);
+
+    })());
+});
+
