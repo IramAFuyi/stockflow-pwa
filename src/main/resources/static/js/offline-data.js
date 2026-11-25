@@ -28,10 +28,11 @@ const StockFlowOffline = (() => {
 
         try {
 
-            const [products, departments] =
+            const [products, departments, movements] =
                 await Promise.all([
                     fetchData("/api/products"),
-                    fetchData("/api/departments")
+                    fetchData("/api/departments"),
+                    fetchData("/api/movements")
                 ]);
 
             await StockFlowDB.replaceAll(
@@ -41,6 +42,24 @@ const StockFlowOffline = (() => {
             await StockFlowDB.replaceAll(
                 "departments", departments
             );
+
+            await StockFlowDB.put("metadata", {
+
+                key: "history",
+
+                value: movements.map(m => ({
+                    operationUuid: m.operationUuid,
+                    productId: m.productId,
+                    productName: m.productName,
+                    sku: m.sku,
+                    departmentName: m.departmentName,
+                    type: m.type,
+                    quantity: m.quantity,
+                    previousStock: m.previousStock,
+                    resultingStock: m.resultingStock,
+                    createdAt: m.createdAt
+                }))
+            });
 
             await StockFlowDB.put("metadata", {
 
@@ -88,11 +107,21 @@ const StockFlowOffline = (() => {
         return metadata?.value ?? null;
     }
 
+    async function getMovements() {
+
+        const metadata = await StockFlowDB.get(
+            "metadata", "history"
+        );
+
+        return metadata?.value ?? [];
+    }
+
     return {
         refreshCatalogs,
         getProducts,
         getDepartments,
-        getLastSync
+        getLastSync,
+        getMovements
     };
 
 })();

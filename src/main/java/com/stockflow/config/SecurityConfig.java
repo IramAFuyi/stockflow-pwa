@@ -47,7 +47,8 @@ public class SecurityConfig {
                                 "/icons/**",
                                 "/manifest.json",
                                 "/sw.js",
-                                "/offline.html")
+                                "/offline.html",
+                                "/app-shell.html")
                         .permitAll()
 
                         .requestMatchers(

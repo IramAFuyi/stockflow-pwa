@@ -343,6 +343,7 @@ document.addEventListener("submit", async event => {
             return;
         }
 
+        StockFlowContext.revoke();
         HTMLFormElement.prototype.submit.call(form);
 
     } catch (error) {
@@ -358,4 +359,36 @@ document.addEventListener("submit", async event => {
         logoutInProgress = false;
     }
 
+});
+
+// Bloquear vistas antiguas al cambiar de cuenta.
+
+window.addEventListener("storage", event => {
+
+    if (event.key === "stockflow-account-generation") {
+
+        const context = StockFlowContext.read();
+
+        if (!context ||
+            context.account !== window.StockFlowAccount) {
+
+            document.body.hidden = true;
+
+            location.replace("/login");
+        }
+    }
+});
+
+window.addEventListener("pageshow", event => {
+
+    if (event.persisted) {
+
+        const context = StockFlowContext.read();
+
+        if (!context ||
+            context.account !== window.StockFlowAccount) {
+
+            location.reload();
+        }
+    }
 });

@@ -1,5 +1,5 @@
 
-const CACHE_NAME = "stockflow-v9";
+const CACHE_NAME = "stockflow-v10";
 
 const STATIC_RESOURCES = [
     "/offline.html",
@@ -18,6 +18,9 @@ const STATIC_RESOURCES = [
     "/js/sync.js",
     "/js/push.js",
     "/js/security.js",
+    "/app-shell.html",
+    "/js/offline-context.js",
+    "/js/app-shell.js",
 ];
 
 const SSR_PAGES = [
@@ -151,19 +154,33 @@ self.addEventListener("fetch", event => {
         return;
     }
 
-    // Vistas SSR.
-    // Las vistas autenticadas no se almacenan en cache.
+    // Navegacion SSR con respaldo App Shell.
     if (request.mode === "navigate") {
 
-        event.respondWith(
-            fetch(request, {
-                cache: "no-store"
-            }).catch(async () => {
+        event.respondWith((async () => {
 
-                return await caches.match("/offline.html")
+            try {
+
+                return await fetch(request, {
+                    cache: "no-store"
+                });
+
+            } catch (error) {
+
+                const cache = await caches.open(CACHE_NAME);
+
+                if (SSR_PAGES.includes(url.pathname)) {
+
+                    return await cache.match("/app-shell.html")
+                        || await cache.match("/offline.html")
+                        || Response.error();
+                }
+
+                return await cache.match("/offline.html")
                     || Response.error();
-            })
-        );
+            }
+
+        })());
 
         return;
     }

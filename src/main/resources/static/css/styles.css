@@ -958,3 +958,128 @@ input[readonly] {
     font-size: 14px;
     overflow-wrap: anywhere;
 }
+
+/* App Shell offline */
+
+.shell-page {
+    min-height: 100vh;
+    padding: 24px;
+    background: #0f172a;
+    color: #e2e8f0;
+}
+
+.shell-page [hidden] {
+    display: none !important;
+}
+
+.shell-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 24px;
+}
+
+.shell-header h1 {
+    color: #38bdf8;
+    margin: 0;
+}
+
+.shell-header small {
+    color: #fbbf24;
+}
+
+.shell-navigation {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.shell-navigation a {
+    text-decoration: none;
+}
+
+.shell-panel {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 18px;
+}
+
+.shell-panel h2 {
+    margin-bottom: 15px;
+}
+
+.shell-panel p {
+    line-height: 1.6;
+}
+
+.shell-panel small {
+    color: #94a3b8;
+}
+
+.shell-stats {
+    display: grid;
+    grid-template-columns:
+        repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+}
+
+.shell-stats h2 {
+    color: #38bdf8;
+    margin-top: 10px;
+    margin-bottom: 0;
+}
+
+.shell-table {
+    overflow-x: auto;
+}
+
+.shell-table table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.shell-table th,
+.shell-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #334155;
+}
+
+.shell-table th {
+    color: #94a3b8;
+}
+
+.shell-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.shell-form input,
+.shell-form select,
+.shell-form textarea {
+    width: 100%;
+    padding: 12px;
+    background: #0f172a;
+    border: 1px solid #475569;
+    border-radius: 8px;
+    color: #e2e8f0;
+}
+
+#shell-message {
+    color: #fbbf24;
+}
+
+@media (max-width: 600px) {
+
+    .shell-page {
+        padding: 15px;
+    }
+
+    .shell-panel {
+        padding: 15px;
+    }
+}

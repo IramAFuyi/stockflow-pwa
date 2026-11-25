@@ -14,6 +14,23 @@ if (!stockflowAccount) {
 
 window.StockFlowAccount = stockflowAccount;
 
+if (!document.querySelector(
+    'meta[name="stockflow-offline-shell"]'
+)) {
+
+    try {
+
+        StockFlowContext.remember(stockflowAccount);
+
+    } catch (error) {
+
+        console.warn(
+            "No se pudo guardar el contexto offline.",
+            error
+        );
+    }
+}
+
 async function stockflowFetch(url, options = {}) {
 
     const target = new URL(url, window.location.origin);
