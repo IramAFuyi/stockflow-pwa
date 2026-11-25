@@ -1,5 +1,5 @@
 
-const CACHE_NAME = "stockflow-v1";
+const CACHE_NAME = "stockflow-v5";
 
 const STATIC_RESOURCES = [
     "/offline.html",
@@ -12,7 +12,10 @@ const STATIC_RESOURCES = [
     "/icons/icon.svg",
     "/icons/icon-192.png",
     "/icons/icon-512.png",
-    "/icons/icon-maskable-512.png"
+    "/icons/icon-maskable-512.png",
+    "/js/indexed-db.js",
+    "/js/offline-data.js",
+    "/js/sync.js",
 ];
 
 const SSR_PAGES = [

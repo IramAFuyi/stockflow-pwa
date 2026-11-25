@@ -23,6 +23,9 @@
       th:href="@{/icons/icon-192.png}">
 
     <script th:src="@{/js/dashboard.js}" defer></script>
+    <script th:src="@{/js/indexed-db.js}" defer></script>
+    <script th:src="@{/js/offline-data.js}" defer></script>
+    <script th:src="@{/js/sync.js}" defer></script>
     <script th:src="@{/js/pwa.js}" defer></script>
 </head>
 
@@ -116,6 +119,35 @@
     </div>
 
 </section>
+
+<section id="sync-panel"
+         class="sync-panel"
+         aria-label="Sincronizacion de movimientos">
+
+    <div class="sync-header">
+
+        <div>
+            <strong>⇄ Sincronización de inventario</strong>
+
+            <p id="sync-status" aria-live="polite">
+                Comprobando operaciones pendientes...
+            </p>
+        </div>
+
+        <button type="button"
+                id="sync-now"
+                class="btn-secondary">
+            Sincronizar ahora
+        </button>
+
+    </div>
+
+    <p id="last-sync"></p>
+
+    <div id="pending-list"></div>
+
+</section>
+
         <section class="stats-grid"
                  aria-label="Indicadores del inventario">
 

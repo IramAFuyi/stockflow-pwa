@@ -57,7 +57,7 @@ function calculateStock() {
 
     const quantity = Number(fields.quantity.value);
 
-    if (!fields.product.value) {
+    if (!fields.product.value || !selected) {
 
         fields.currentStock.value = "";
         fields.resultingStock.value = "";
@@ -74,7 +74,11 @@ function calculateStock() {
 
     fields.currentStock.value = currentStock;
 
+    fields.currentStock.title =
+        "Existencias estimadas incluyendo operaciones pendientes";
+
     const valid =
+        Number.isInteger(currentStock) &&
         Number.isInteger(quantity) &&
         quantity > 0 &&
         resultingStock >= 0 &&
@@ -200,7 +204,7 @@ clearLocationButton.addEventListener("click", () => {
 // Formulario de movimientos
 // ===================================
 
-function openMovement() {
+async function openMovement() {
 
     if (pendingPayload) {
         modal.showModal();
@@ -215,6 +219,8 @@ function openMovement() {
     saveButton.disabled = false;
 
     saveButton.textContent = "Registrar movimiento";
+
+    await refreshMovementEstimates();
 
     calculateStock();
 
@@ -251,6 +257,7 @@ function lockMovement(locked) {
     closeButton.disabled = locked;
 }
 
+
 form.addEventListener("submit", async event => {
 
     event.preventDefault();
@@ -259,7 +266,6 @@ form.addEventListener("submit", async event => {
 
     clearError();
 
-    // Generar UUID solamente para una operacion nueva.
     if (!pendingPayload) {
 
         if (!calculateStock()) {
@@ -272,7 +278,9 @@ form.addEventListener("submit", async event => {
         }
 
         pendingPayload = {
+
             operationUuid: crypto.randomUUID(),
+
             productId: Number(fields.product.value),
 
             departmentId: fields.department.value
@@ -280,10 +288,13 @@ form.addEventListener("submit", async event => {
                 : null,
 
             type: fields.type.value,
+
             quantity: Number(fields.quantity.value),
+
             observations: fields.observations.value.trim(),
 
             latitude: coordinates?.latitude ?? null,
+
             longitude: coordinates?.longitude ?? null
         };
     }
@@ -293,61 +304,72 @@ form.addEventListener("submit", async event => {
     lockMovement(true);
 
     saveButton.disabled = true;
-    saveButton.textContent = "Registrando...";
+    saveButton.textContent = "Guardando...";
 
     try {
 
-        const response = await fetch("/api/movements", {
+        // Guardar primero en IndexedDB.
+        await StockFlowSync.enqueue(pendingPayload);
 
-            method: "POST",
-
-            headers: {
-                "Content-Type": "application/json"
-            },
-
-            body: JSON.stringify(pendingPayload)
-        });
-
-        if (!response.ok) {
-
-            const error = await response.json()
-                .catch(() => ({}));
-
-            // Errores de validacion o negocio confirmados.
-            if ([400, 404, 409, 422].includes(response.status)) {
-
-                pendingPayload = null;
-                lockMovement(false);
-
-                showError(
-                    error.message ||
-                    "El servidor rechazó el movimiento."
-                );
-
-                return;
-            }
-
-            throw new Error(
-                `No se pudo confirmar la operación (${response.status}).`
-            );
-        }
-
-        await response.json();
+        const operationUuid = pendingPayload.operationUuid;
 
         pendingPayload = null;
 
         modal.close();
 
-        window.location.reload();
+        form.reset();
+
+        resetLocation();
+
+        lockMovement(false);
+
+        // Intentar enviar al servidor.
+        if (navigator.onLine) {
+
+            await StockFlowSync.synchronize();
+        }
+
+        const remaining = await StockFlowDB.get(
+            "pendingMovements",
+            operationUuid
+        );
+
+        if (!remaining) {
+
+            alert("Movimiento registrado correctamente.");
+
+            window.location.reload();
+
+        } else if (remaining.status === "CONFLICT") {
+
+            alert(
+                "El servidor rechazo el movimiento. " +
+                "Consulta el panel de sincronizacion."
+            );
+
+        } else {
+
+            alert(
+                "Movimiento guardado en el dispositivo. " +
+                "Se sincronizara al recuperar la conexion."
+            );
+        }
 
     } catch (error) {
 
-        // Conservar el mismo UUID y los mismos datos.
-        showError(
-            "No se pudo confirmar el movimiento. " +
-            "Reintenta cuando recuperes la conexión. " +
-            "No se generará un nuevo UUID."
-        );
+        if (modal.open) {
+
+            showError(
+                "No se pudo guardar el movimiento: " +
+                error.message
+            );
+
+        } else {
+
+            alert(
+                "Consulta la cola antes de repetir la operacion."
+            );
+        }
 
     } finally {
 
@@ -483,3 +505,120 @@ document.addEventListener("keydown", event => {
 
 filterMovements();
 updateConnectionStatus();
+
+
+async function updateLocalStock() {
+
+    const products = await StockFlowOffline.getProducts();
+
+    const departments =
+        await StockFlowOffline.getDepartments();
+
+    const queue = await StockFlowSync.getQueue();
+
+    const stockMap = new Map(
+        products.map(p => [p.id, p.stock])
+    );
+
+    for (const movement of queue) {
+
+        const payload = movement.payload;
+
+        if (!stockMap.has(payload.productId)) {
+            continue;
+        }
+
+        const previous = stockMap.get(
+            payload.productId
+        );
+
+        const quantity = payload.type === "IN"
+            ? payload.quantity
+            : -payload.quantity;
+
+        stockMap.set(
+            payload.productId,
+            previous + quantity
+        );
+    }
+
+    const selectedProduct = fields.product.value;
+
+    const selectedDepartment = fields.department.value;
+
+    if (products.length > 0) {
+
+        fields.product.replaceChildren(
+            new Option("Seleccionar producto", "")
+        );
+
+        for (const product of products) {
+
+            const option = new Option(
+                `${product.sku} - ${product.name}`,
+                product.id
+            );
+
+            option.dataset.stock =
+                stockMap.get(product.id);
+
+            fields.product.appendChild(option);
+        }
+
+        fields.product.value = selectedProduct;
+    }
+
+    if (departments.length > 0) {
+
+        fields.department.replaceChildren(
+            new Option("Sin departamento", "")
+        );
+
+        for (const department of departments) {
+
+            fields.department.appendChild(
+                new Option(
+                    department.name,
+                    department.id
+                )
+            );
+        }
+
+        fields.department.value = selectedDepartment;
+    }
+
+    calculateStock();
+}
+
+async function refreshMovementEstimates() {
+
+    try {
+
+        if (!sending && !pendingPayload) {
+
+            await updateLocalStock();
+        }
+
+    } catch (error) {
+
+        console.warn(
+            "[StockFlow] No se actualizaron las estimaciones",
+            error
+        );
+    }
+}
+
+window.addEventListener(
+    "stockflow:queue-changed",
+    refreshMovementEstimates
+);
+
+window.addEventListener(
+    "stockflow:sync-completed",
+    refreshMovementEstimates
+);
+
+window.addEventListener(
+    "load",
+    refreshMovementEstimates
+);
