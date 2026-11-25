@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#0f172a">
     <meta name="description" content="StockFlow - Sistema de inventario informático">
+    <meta name="stockflow-account" th:content="${stockflowAccount}">
 
     <title>StockFlow | Dashboard</title>
 
@@ -71,9 +72,14 @@
 
         <div class="sidebar-footer">
             <div class="session-info">
+                <div class="current-user">
+                    <small>Sesión iniciada como</small>
 
-                <form th:action="@{/logout}" method="post">
-
+                    <strong th:text="${stockflowAccount}">
+                        Usuario
+                    </strong>
+                </div>
+                <form id="logout-form" th:action="@{/logout}" method="post">
                     <button type="submit" class="btn-secondary">
                         Cerrar sesión
                     </button>

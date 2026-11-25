@@ -82,7 +82,7 @@ async function updateSyncPanel() {
             ? "No hay movimientos pendientes."
 
             : `${pending} pendientes | ` +
-              `${conflicts} requieren revision`;
+            `${conflicts} requieren revision`;
 
         list.replaceChildren();
 
@@ -106,7 +106,7 @@ async function updateSyncPanel() {
 
             title.textContent =
                 `${type} - ${product?.name ||
-                    "Producto " + movement.payload.productId}`;
+                "Producto " + movement.payload.productId}`;
 
             const detail = document.createElement("p");
 
@@ -137,7 +137,7 @@ async function updateSyncPanel() {
         lastSync.textContent = date
 
             ? "Ultima actualizacion del catalogo: " +
-              new Date(date).toLocaleString("es-MX")
+            new Date(date).toLocaleString("es-MX")
 
             : "Catalogo local sin actualizar";
 
@@ -288,4 +288,74 @@ document.querySelectorAll("dialog").forEach(dialog => {
             refreshSyncedView();
         }
     });
+});
+
+
+// ===================================
+// Cierre seguro de sesion
+// ===================================
+
+let logoutInProgress = false;
+
+document.addEventListener("submit", async event => {
+
+    const form = event.target;
+
+    if (!(form instanceof HTMLFormElement)) return;
+
+    if (form.id !== "logout-form") return;
+
+    event.preventDefault();
+
+    if (logoutInProgress) return;
+
+    if (!navigator.onLine) {
+
+        alert(
+            "No puedes cerrar sesion sin conexion."
+        );
+
+        return;
+    }
+
+    logoutInProgress = true;
+
+    try {
+
+        if (syncRunning) {
+
+            alert(
+                "Hay una sincronizacion en proceso."
+            );
+
+            return;
+        }
+
+        const queue = await StockFlowSync.getQueue();
+
+        if (queue.length > 0) {
+
+            alert(
+                `Tienes ${queue.length} movimientos pendientes. ` +
+                "Debes sincronizarlos antes de cerrar sesion."
+            );
+
+            return;
+        }
+
+        HTMLFormElement.prototype.submit.call(form);
+
+    } catch (error) {
+
+        console.error(error);
+
+        alert(
+            "No se pudo verificar la cola de movimientos."
+        );
+
+    } finally {
+
+        logoutInProgress = false;
+    }
+
 });

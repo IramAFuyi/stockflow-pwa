@@ -5,7 +5,7 @@ const StockFlowOffline = (() => {
 
     async function fetchData(url) {
 
-        const response = await fetch(url, {
+        const response = await stockflowFetch(url, {
             cache: "no-store"
         });
 

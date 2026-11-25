@@ -17,6 +17,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
+import org.springframework.security.web.access.intercept.AuthorizationFilter;
 
 @Configuration
 @EnableWebSecurity
@@ -116,7 +117,9 @@ public class SecurityConfig {
                                 request -> request.getRequestURI()
                                         .startsWith(
                                                 request.getContextPath() + "/api/")));
-
+        http.addFilterAfter(
+                new AccountBindingFilter(),
+                AuthorizationFilter.class);
         return http.build();
     }
 }
