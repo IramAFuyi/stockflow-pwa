@@ -291,6 +291,47 @@ document.querySelectorAll("dialog").forEach(dialog => {
 });
 
 
+async function detachPushSubscription() {
+
+    if (!("serviceWorker" in navigator) ||
+        !("PushManager" in window)) {
+
+        return;
+    }
+
+    const registration =
+        await navigator.serviceWorker.getRegistration();
+
+    const subscription =
+        await registration?.pushManager.getSubscription();
+
+    if (!subscription) return;
+
+    const response = await stockflowFetch(
+        "/api/push/subscribe",
+        {
+            method: "DELETE",
+
+            headers: {
+                "Content-Type": "application/json"
+            },
+
+            body: JSON.stringify({
+                endpoint: subscription.endpoint
+            }),
+
+            signal: AbortSignal.timeout(10000)
+        }
+    );
+
+    if (!response.ok) {
+
+        throw new Error(
+            "No se pudieron desvincular las notificaciones."
+        );
+    }
+}
+
 // ===================================
 // Cierre seguro de sesion
 // ===================================
@@ -343,7 +384,10 @@ document.addEventListener("submit", async event => {
             return;
         }
 
+        await detachPushSubscription();
+
         StockFlowContext.revoke();
+
         HTMLFormElement.prototype.submit.call(form);
 
     } catch (error) {
@@ -351,7 +395,7 @@ document.addEventListener("submit", async event => {
         console.error(error);
 
         alert(
-            "No se pudo verificar la cola de movimientos."
+            "No se pudo cerrar sesion: " + error.message
         );
 
     } finally {

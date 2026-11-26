@@ -81,7 +81,8 @@ public class SecurityConfig {
                         .requestMatchers(
                                 HttpMethod.POST,
                                 "/api/movements",
-                                "/api/push/subscribe")
+                                "/api/push/subscribe",
+                                "/api/push/status")
                         .hasAnyRole("ADMIN", "OPERATOR")
 
                         .requestMatchers(

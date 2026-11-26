@@ -59,6 +59,54 @@
             ? await registration.pushManager.getSubscription()
             : null;
 
+        let registered = false;
+        let verified = !subscription;
+
+        if (subscription && navigator.onLine) {
+
+            try {
+
+                const response = await stockflowFetch(
+                    "/api/push/status",
+                    {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            endpoint: subscription.endpoint
+                        })
+                    }
+                );
+
+                if (response.ok) {
+
+                    const data = await response.json();
+
+                    registered = data.subscribed === true;
+                    verified = true;
+                }
+
+            } catch (error) {
+
+                console.warn(
+                    "No se pudo verificar la suscripcion.",
+                    error
+                );
+            }
+        }
+
+        if (!verified) {
+
+            status.textContent =
+                "No se pudo comprobar la suscripcion.";
+
+            enableButton.disabled = true;
+            disableButton.disabled = true;
+
+            return;
+        }
+
         if (Notification.permission === "denied") {
 
             status.textContent =
@@ -68,14 +116,18 @@
 
         } else {
 
-            status.textContent = subscription
-                ? "Suscripcion local activa."
-                : "Notificaciones desactivadas.";
+            status.textContent = registered
 
-            enableButton.disabled = false;
+                ? "Notificaciones activadas para tu cuenta."
+
+                : "Notificaciones desactivadas para tu cuenta.";
+
+            enableButton.disabled =
+                registered || !navigator.onLine;
         }
 
-        disableButton.disabled = !subscription;
+        disableButton.disabled =
+            !registered || !navigator.onLine;
     }
 
     enableButton.addEventListener("click", async () => {
@@ -227,4 +279,11 @@
         });
     });
 
+    window.addEventListener("online", () => {
+        updateStatus().catch(console.error);
+    });
+
+    window.addEventListener("offline", () => {
+        updateStatus().catch(console.error);
+    });
 })();
