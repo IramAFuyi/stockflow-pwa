@@ -33,8 +33,30 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http) throws Exception {
 
-        http
-                .authorizeHttpRequests(auth -> auth
+        
+http
+        .headers(headers -> headers
+                .contentSecurityPolicy(csp -> csp
+                        .policyDirectives(
+                                "default-src 'self'; " +
+                                "script-src 'self'; " +
+                                "style-src 'self'; " +
+                                "img-src 'self'; " +
+                                "font-src 'self'; " +
+                                "connect-src 'self'; " +
+                                "worker-src 'self'; " +
+                                "manifest-src 'self'; " +
+                                "object-src 'none'; " +
+                                "frame-src 'none'; " +
+                                "frame-ancestors 'none'; " +
+                                "base-uri 'self'; " +
+                                "form-action 'self';"
+                        )
+                )
+        )
+
+        .authorizeHttpRequests(auth -> auth
+
 
                         .dispatcherTypeMatchers(
                                 DispatcherType.ERROR)
