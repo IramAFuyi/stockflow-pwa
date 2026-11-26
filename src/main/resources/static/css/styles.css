@@ -1096,3 +1096,62 @@ input[readonly] {
     font-weight: 500;
     white-space: nowrap;
 }
+
+/* Resolucion de conflictos */
+
+.pending-item.conflict {
+    border-left: 4px solid #f59e0b;
+    background: rgba(245, 158, 11, 0.07);
+}
+
+.conflict-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.btn-discard {
+    padding: 8px 14px;
+    border: 1px solid #ef4444;
+    background: rgba(239, 68, 68, 0.1);
+    color: #f87171;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.btn-discard:hover {
+    background: rgba(239, 68, 68, 0.2);
+}
+
+.conflict-actions button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.discarded-section {
+    margin-top: 18px;
+    padding: 12px;
+    border: 1px solid #334155;
+    border-radius: 8px;
+}
+
+.discarded-section summary {
+    cursor: pointer;
+    color: #94a3b8;
+    font-weight: 500;
+}
+
+.discarded-item {
+    padding: 12px;
+    margin-top: 10px;
+    border-radius: 6px;
+    background: rgba(148, 163, 184, 0.06);
+    color: #94a3b8;
+    font-size: 13px;
+}
+
+.discarded-item p {
+    margin: 5px 0;
+}

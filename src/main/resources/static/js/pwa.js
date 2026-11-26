@@ -47,6 +47,47 @@ updateOfflineBanner();
 // IndexedDB y sincronizacion
 // ===================================
 
+let resolvingConflict = false;
+
+async function handleConflict(operationUuid, action) {
+
+    if (resolvingConflict) return;
+
+    if (action === "discard") {
+
+        const accepted = confirm(
+            "¿Deseas descartar este movimiento? " +
+            "No se enviara al servidor, pero se conservara " +
+            "como evidencia local."
+        );
+
+        if (!accepted) return;
+    }
+
+    resolvingConflict = true;
+
+    try {
+
+        await StockFlowSync.resolveConflict(
+            operationUuid,
+            action
+        );
+
+        await runSynchronization();
+
+    } catch (error) {
+
+        alert(error.message);
+        console.error(error);
+
+    } finally {
+
+        resolvingConflict = false;
+
+        await updateSyncPanel();
+    }
+}
+
 async function updateSyncPanel() {
 
     const status =
@@ -129,7 +170,110 @@ async function updateSyncPanel() {
                 item.appendChild(error);
             }
 
+            if (movement.status === "CONFLICT") {
+
+                const actions = document.createElement("div");
+
+                actions.className = "conflict-actions";
+
+                const retry = document.createElement("button");
+
+                retry.type = "button";
+                retry.className = "btn-secondary";
+                retry.textContent = "Reintentar";
+
+                retry.disabled =
+                    resolvingConflict || !navigator.onLine;
+
+                retry.addEventListener("click", () => {
+
+                    handleConflict(
+                        movement.operationUuid,
+                        "retry"
+                    );
+                });
+
+                const discard = document.createElement("button");
+
+                discard.type = "button";
+                discard.className = "btn-discard";
+                discard.textContent = "Descartar";
+
+                discard.disabled =
+                    resolvingConflict || !navigator.onLine;
+
+                discard.addEventListener("click", () => {
+
+                    handleConflict(
+                        movement.operationUuid,
+                        "discard"
+                    );
+                });
+
+                actions.append(retry, discard);
+
+                item.appendChild(actions);
+            }
+
             list.appendChild(item);
+        }
+
+        const discarded = await StockFlowSync.getDiscarded();
+
+        if (discarded.length > 0) {
+
+            const archive = document.createElement("details");
+
+            archive.className = "discarded-section";
+
+            const heading = document.createElement("summary");
+
+            heading.textContent =
+                `Movimientos descartados (${discarded.length})`;
+
+            archive.appendChild(heading);
+
+            for (const movement of discarded) {
+
+                const row = document.createElement("div");
+
+                row.className = "discarded-item";
+
+                const product = products.find(
+                    p => p.id === movement.payload.productId
+                );
+
+                const title = document.createElement("strong");
+
+                title.textContent =
+                    product?.name ||
+                    `Producto ${movement.payload.productId}`;
+
+                const detail = document.createElement("p");
+
+                detail.textContent =
+                    `${movement.payload.type} | ` +
+                    `${movement.payload.quantity} unidades | ` +
+                    `${movement.discardedBy || "Sin usuario"}`;
+
+                const reason = document.createElement("p");
+
+                reason.textContent =
+                    "Motivo: " +
+                    (movement.lastError || "Cancelado manualmente");
+
+                const date = document.createElement("small");
+
+                date.textContent =
+                    new Date(movement.discardedAt)
+                        .toLocaleString("es-MX");
+
+                row.append(title, detail, reason, date);
+
+                archive.appendChild(row);
+            }
+
+            list.appendChild(archive);
         }
 
         const date = await StockFlowOffline.getLastSync();
@@ -363,8 +507,7 @@ document.addEventListener("submit", async event => {
 
     try {
 
-        if (syncRunning) {
-
+        if (syncRunning || resolvingConflict) {
             alert(
                 "Hay una sincronizacion en proceso."
             );
@@ -435,4 +578,7 @@ window.addEventListener("pageshow", event => {
             location.reload();
         }
     }
+
+    window.addEventListener("offline", updateSyncPanel);
+    window.addEventListener("online", updateSyncPanel);
 });

@@ -123,37 +123,14 @@
         table.appendChild(row);
     }
 
+
     function estimatedStock() {
 
-        stockMap = new Map(
-            products.map(p => [p.id, p.stock])
+        stockMap = StockFlowSync.estimateStock(
+            products,
+            queue,
+            movements
         );
-
-        const confirmed = new Set(
-            movements.map(m => m.operationUuid)
-        );
-
-        for (const item of queue) {
-
-            if (item.status !== "PENDING" ||
-                confirmed.has(item.operationUuid)) {
-
-                continue;
-            }
-
-            const p = item.payload;
-
-            if (!stockMap.has(p.productId)) continue;
-
-            const delta = p.type === "IN"
-                ? p.quantity
-                : -p.quantity;
-
-            stockMap.set(
-                p.productId,
-                stockMap.get(p.productId) + delta
-            );
-        }
     }
 
     function renderDashboard() {
@@ -243,6 +220,16 @@
                     : "");
 
             container.appendChild(row);
+            if (item.status === "CONFLICT") {
+
+                const warning = document.createElement("small");
+
+                warning.textContent =
+                    "Recupera la conexion para reintentar " +
+                    "o descartar este movimiento.";
+
+                container.appendChild(warning);
+            }
         }
     }
 

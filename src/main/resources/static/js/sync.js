@@ -4,6 +4,7 @@
 const StockFlowSync = (() => {
 
     let syncing = false;
+    let localLock = Promise.resolve();
 
     async function notifyChanges() {
 
@@ -12,48 +13,27 @@ const StockFlowSync = (() => {
         );
     }
 
-    // Guardar antes de intentar enviar.
-    async function enqueue(payload) {
+    // Usar el mismo bloqueo para enviar, guardar
+    // y resolver operaciones.
 
-        const existing = await StockFlowDB.get(
-            "pendingMovements",
-            payload.operationUuid
-        );
+    function withQueueLock(action) {
 
-        if (existing) {
-            return existing;
+        if (navigator.locks) {
+
+            return navigator.locks.request(
+                "stockflow-sync",
+                action
+            );
         }
 
-        const movement = {
+        const task = localLock.then(action);
 
-            operationUuid: payload.operationUuid,
+        localLock = task.catch(() => { });
 
-            payload: payload,
-
-            status: "PENDING",
-
-            attempts: 0,
-
-            createdAt: new Date().toISOString(),
-
-            lastError: null
-        };
-
-        await StockFlowDB.put(
-            "pendingMovements",
-            movement
-        );
-
-        await notifyChanges();
-
-        return movement;
+        return task;
     }
 
-    async function getQueue() {
-
-        const movements = await StockFlowDB.getAll(
-            "pendingMovements"
-        );
+    function sortMovements(movements) {
 
         return movements.sort(
             (a, b) =>
@@ -62,12 +42,217 @@ const StockFlowSync = (() => {
         );
     }
 
+    async function enqueue(payload) {
+
+        return withQueueLock(async () => {
+
+            const existing = await StockFlowDB.get(
+                "pendingMovements",
+                payload.operationUuid
+            );
+
+            if (existing) {
+
+                if (existing.status === "DISCARDED") {
+
+                    throw new Error(
+                        "La operacion ya fue descartada."
+                    );
+                }
+
+                return existing;
+            }
+
+            const movement = {
+
+                operationUuid: payload.operationUuid,
+                payload: payload,
+                status: "PENDING",
+                attempts: 0,
+                createdAt: new Date().toISOString(),
+                lastError: null
+            };
+
+            await StockFlowDB.put(
+                "pendingMovements",
+                movement
+            );
+
+            await notifyChanges();
+
+            return movement;
+        });
+    }
+
+    async function getQueue() {
+
+        const movements = await StockFlowDB.getAll(
+            "pendingMovements"
+        );
+
+        return sortMovements(
+            movements.filter(m =>
+                m.status !== "DISCARDED"
+            )
+        );
+    }
+
+    async function getDiscarded() {
+
+        const movements = await StockFlowDB.getAll(
+            "pendingMovements"
+        );
+
+        return movements
+            .filter(m => m.status === "DISCARDED")
+            .sort((a, b) =>
+                new Date(b.discardedAt) -
+                new Date(a.discardedAt)
+            );
+    }
+
+    // Resolver un conflicto sin modificar su payload.
+
+    async function resolveConflict(operationUuid, action) {
+
+        if (!navigator.onLine) {
+
+            throw new Error(
+                "Recupera la conexion para resolver el conflicto."
+            );
+        }
+
+        if (!["retry", "discard"].includes(action)) {
+
+            throw new Error("Accion no valida.");
+        }
+
+        return withQueueLock(async () => {
+
+            const movement = await StockFlowDB.get(
+                "pendingMovements",
+                operationUuid
+            );
+
+            if (!movement ||
+                movement.status !== "CONFLICT") {
+
+                throw new Error(
+                    "La operacion ya no esta en conflicto."
+                );
+            }
+
+            // Comprobar que la sesion sigue autenticada
+            // y corresponde a la cuenta actual.
+
+            const session = await stockflowFetch(
+                "/api/csrf",
+                {
+                    signal: AbortSignal.timeout(10000)
+                }
+            );
+
+            if (!session.ok) {
+
+                throw new Error(
+                    "La sesion no es valida. Inicia sesion nuevamente."
+                );
+            }
+
+            if (action === "retry") {
+
+                movement.previousError = movement.lastError;
+                movement.lastError = null;
+                movement.status = "PENDING";
+
+            } else {
+
+                movement.status = "DISCARDED";
+
+                movement.discardedAt =
+                    new Date().toISOString();
+
+                movement.discardedBy =
+                    window.StockFlowAccount;
+            }
+
+            await StockFlowDB.put(
+                "pendingMovements",
+                movement
+            );
+
+            await notifyChanges();
+        });
+    }
+
+    // Estimacion compartida entre SSR y App Shell.
+
+    function estimateStock(products, queue, history = []) {
+
+        const stockMap = new Map(
+            products.map(p => [p.id, p.stock])
+        );
+
+        const confirmed = new Set(
+            history.map(m => m.operationUuid)
+        );
+
+        for (const movement of queue) {
+
+            // Mantener el orden de la cola.
+            // No estimar operaciones bloqueadas.
+
+            if (movement.status === "CONFLICT") {
+
+                break;
+            }
+
+            if (movement.status !== "PENDING" ||
+                confirmed.has(movement.operationUuid)) {
+
+                continue;
+            }
+
+            const payload = movement.payload;
+
+            if (!stockMap.has(payload.productId)) {
+
+                break;
+            }
+
+            const previous = stockMap.get(
+                payload.productId
+            );
+
+            const delta = payload.type === "IN"
+                ? payload.quantity
+                : -payload.quantity;
+
+            const resulting = previous + delta;
+
+            if (!Number.isInteger(resulting) ||
+                resulting < 0 ||
+                resulting > 2147483647) {
+
+                break;
+            }
+
+            stockMap.set(
+                payload.productId,
+                resulting
+            );
+        }
+
+        return stockMap;
+    }
+
     async function sendMovement(movement) {
 
         movement.attempts++;
 
         await StockFlowDB.put(
-            "pendingMovements", movement
+            "pendingMovements",
+            movement
         );
 
         try {
@@ -96,12 +281,17 @@ const StockFlowSync = (() => {
                     error.message ||
                     `Error HTTP ${response.status}`;
 
-                // Errores que requieren revision manual.
+                movement.lastHttpStatus =
+                    response.status;
+
                 if ([400, 404, 409, 422].includes(
                     response.status
                 )) {
 
                     movement.status = "CONFLICT";
+
+                    movement.conflictAt =
+                        new Date().toISOString();
 
                 } else {
 
@@ -109,7 +299,8 @@ const StockFlowSync = (() => {
                 }
 
                 await StockFlowDB.put(
-                    "pendingMovements", movement
+                    "pendingMovements",
+                    movement
                 );
 
                 return false;
@@ -125,7 +316,6 @@ const StockFlowSync = (() => {
                 );
             }
 
-            // El servidor confirmo la operacion.
             await StockFlowDB.remove(
                 "pendingMovements",
                 movement.operationUuid
@@ -155,6 +345,7 @@ const StockFlowSync = (() => {
     async function processQueue() {
 
         let confirmed = 0;
+        let conflictDetected = false;
 
         try {
 
@@ -162,8 +353,9 @@ const StockFlowSync = (() => {
 
             for (const movement of movements) {
 
-                // Detener la cola ante un conflicto.
-                if (movement.status === "CONFLICT") {
+                if (!navigator.onLine ||
+                    movement.status === "CONFLICT") {
+
                     break;
                 }
 
@@ -171,13 +363,20 @@ const StockFlowSync = (() => {
                     await sendMovement(movement);
 
                 if (!success) {
+
+                    conflictDetected =
+                        movement.status === "CONFLICT";
+
                     break;
                 }
 
                 confirmed++;
             }
 
-            if (confirmed > 0) {
+            // Actualizar existencias incluso si el
+            // servidor rechazo una operacion.
+
+            if (confirmed > 0 || conflictDetected) {
 
                 await StockFlowOffline.refreshCatalogs();
             }
@@ -193,6 +392,7 @@ const StockFlowSync = (() => {
     async function synchronize() {
 
         if (syncing || !navigator.onLine) {
+
             return 0;
         }
 
@@ -200,16 +400,7 @@ const StockFlowSync = (() => {
 
         try {
 
-            // Evitar sincronizaciones simultaneas entre pestañas.
-            if (navigator.locks) {
-
-                return await navigator.locks.request(
-                    "stockflow-sync",
-                    () => processQueue()
-                );
-            }
-
-            return await processQueue();
+            return await withQueueLock(processQueue);
 
         } finally {
 
@@ -220,6 +411,9 @@ const StockFlowSync = (() => {
     return {
         enqueue,
         getQueue,
+        getDiscarded,
+        resolveConflict,
+        estimateStock,
         synchronize
     };
 
