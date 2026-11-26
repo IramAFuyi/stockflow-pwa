@@ -25,17 +25,20 @@ public class StockMovementService {
     private final ProductRepository productRepository;
     private final DepartmentRepository departmentRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final AppUserRepository userRepository;
 
     public StockMovementService(
             StockMovementRepository movementRepository,
             ProductRepository productRepository,
             DepartmentRepository departmentRepository,
-            ApplicationEventPublisher eventPublisher) {
+            ApplicationEventPublisher eventPublisher,
+            AppUserRepository userRepository) {
 
         this.movementRepository = movementRepository;
         this.productRepository = productRepository;
         this.departmentRepository = departmentRepository;
         this.eventPublisher = eventPublisher;
+        this.userRepository = userRepository;
     }
 
     public List<MovementResponse> findAll() {
@@ -48,7 +51,16 @@ public class StockMovementService {
     }
 
     @Transactional
-    public MovementResponse create(MovementRequest request) {
+    public MovementResponse create(
+            MovementRequest request,
+            String username) {
+
+        AppUser user = userRepository
+                .findByUsernameIgnoreCase(username)
+                .filter(AppUser::isActive)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.FORBIDDEN,
+                        "Usuario no autorizado"));
 
         // Bloquear el producto durante la transaccion
         Product product = productRepository
@@ -64,7 +76,15 @@ public class StockMovementService {
         if (existing.isPresent()) {
 
             StockMovement movement = existing.get();
+            if (movement.getUser() == null ||
+                    !Objects.equals(
+                            movement.getUser().getId(),
+                            user.getId())) {
 
+                throw new ResponseStatusException(
+                        HttpStatus.CONFLICT,
+                        "El identificador pertenece a otra operacion");
+            }
             validateRepeatedOperation(movement, request);
 
             return MovementResponse.from(movement);
@@ -147,6 +167,7 @@ public class StockMovementService {
                 request.operationUuid(),
                 product,
                 department,
+                user,
                 request.type(),
                 request.quantity(),
                 previousStock,

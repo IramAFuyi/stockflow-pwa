@@ -222,6 +222,7 @@
                             <th scope="col">Departamento</th>
                             <th scope="col">Ubicación</th>
                             <th scope="col">Observaciones</th>
+                            <th scope="col">Registrado por</th>
                         </tr>
                     </thead>
 
@@ -273,6 +274,12 @@
                             </td>
 
                             <td th:text="${m.observations}"></td>
+                            <td>
+                                <span class="user-badge" th:text="${m.registeredBy != null
+                                          ? m.registeredBy
+                                          : 'Sin usuario registrado'}">
+                                </span>
+                            </td>
 
                         </tr>
 

@@ -195,12 +195,14 @@
         for (const m of movements) {
 
             addRow(table, [
-                new Date(m.createdAt).toLocaleString("es-MX"),
+                new Date(m.createdAt)
+                    .toLocaleString("es-MX"),
                 m.productName,
                 m.type === "IN" ? "Entrada" : "Salida",
                 m.quantity,
                 `${m.previousStock} → ${m.resultingStock}`,
-                m.departmentName || "—"
+                m.departmentName || "—",
+                m.registeredBy || "Sin usuario registrado"
             ]);
         }
     }

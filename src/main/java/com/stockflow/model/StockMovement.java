@@ -10,18 +10,17 @@ import java.util.UUID;
 @Entity
 @Table(name = "stock_movements")
 @Check(constraints = """
-    quantity > 0 AND
-    previous_stock >= 0 AND
-    resulting_stock >= 0
-    """)
+        quantity > 0 AND
+        previous_stock >= 0 AND
+        resulting_stock >= 0
+        """)
 public class StockMovement {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "operation_uuid",
-            nullable = false, unique = true, updatable = false)
+    @Column(name = "operation_uuid", nullable = false, unique = true, updatable = false)
     private UUID operationUuid;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -31,6 +30,10 @@ public class StockMovement {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "department_id")
     private Department department;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", updatable = false)
+    private AppUser user;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 10)
@@ -52,8 +55,7 @@ public class StockMovement {
 
     private Double longitude;
 
-    @Column(name = "created_at",
-            nullable = false, updatable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
     protected StockMovement() {
@@ -63,6 +65,7 @@ public class StockMovement {
             UUID operationUuid,
             Product product,
             Department department,
+            AppUser user,
             MovementType type,
             int quantity,
             int previousStock,
@@ -74,6 +77,7 @@ public class StockMovement {
         this.operationUuid = operationUuid;
         this.product = product;
         this.department = department;
+        this.user = java.util.Objects.requireNonNull(user);
         this.type = type;
         this.quantity = quantity;
         this.previousStock = previousStock;
@@ -82,6 +86,10 @@ public class StockMovement {
         this.latitude = latitude;
         this.longitude = longitude;
         this.createdAt = Instant.now();
+    }
+
+    public AppUser getUser() {
+        return user;
     }
 
     public Long getId() {

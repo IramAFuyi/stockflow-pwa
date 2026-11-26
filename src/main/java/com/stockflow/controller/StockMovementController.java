@@ -9,6 +9,7 @@ import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.security.Principal;
 
 @RestController
 @RequestMapping("/api/movements")
@@ -29,8 +30,11 @@ public class StockMovementController {
 
     @PostMapping
     public MovementResponse create(
-            @Valid @RequestBody MovementRequest request) {
+            @Valid @RequestBody MovementRequest request,
+            Principal principal) {
 
-        return movementService.create(request);
+        return movementService.create(
+                request,
+                principal.getName());
     }
 }

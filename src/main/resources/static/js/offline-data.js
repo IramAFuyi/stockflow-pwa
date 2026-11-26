@@ -57,7 +57,8 @@ const StockFlowOffline = (() => {
                     quantity: m.quantity,
                     previousStock: m.previousStock,
                     resultingStock: m.resultingStock,
-                    createdAt: m.createdAt
+                    createdAt: m.createdAt,
+                    registeredBy: m.registeredBy ?? null
                 }))
             });
 
