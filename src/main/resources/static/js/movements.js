@@ -516,31 +516,14 @@ async function updateLocalStock() {
 
     const queue = await StockFlowSync.getQueue();
 
-    const stockMap = new Map(
-        products.map(p => [p.id, p.stock])
+    const history =
+        await StockFlowOffline.getMovements();
+
+    const stockMap = StockFlowSync.estimateStock(
+        products,
+        queue,
+        history
     );
-
-    for (const movement of queue) {
-
-        const payload = movement.payload;
-
-        if (!stockMap.has(payload.productId)) {
-            continue;
-        }
-
-        const previous = stockMap.get(
-            payload.productId
-        );
-
-        const quantity = payload.type === "IN"
-            ? payload.quantity
-            : -payload.quantity;
-
-        stockMap.set(
-            payload.productId,
-            previous + quantity
-        );
-    }
 
     const selectedProduct = fields.product.value;
 

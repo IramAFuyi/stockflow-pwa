@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <meta name="theme-color" content="#0f172a">
+    <meta name="stockflow-account" th:content="${stockflowAccount}">
 
     <title>StockFlow | Movimientos</title>
 
@@ -15,6 +16,9 @@
     <link rel="icon" type="image/svg+xml" th:href="@{/icons/icon.svg}">
 
     <link rel="apple-touch-icon" th:href="@{/icons/icon-192.png}">
+
+    <script th:src="@{/js/offline-context.js}" defer></script>
+    <script th:src="@{/js/security.js}" defer></script>
     <script th:src="@{/js/movements.js}" defer></script>
     <script th:src="@{/js/indexed-db.js}" defer></script>
     <script th:src="@{/js/offline-data.js}" defer></script>
@@ -68,6 +72,27 @@
         </nav>
 
         <div class="sidebar-footer">
+            <div class="session-info">
+                <div class="current-user">
+                    <small>Sesión iniciada como</small>
+
+                    <strong th:text="${stockflowAccount}">
+                        Usuario
+                    </strong>
+                    <span class="role-badge" th:classappend="${stockflowIsAdmin
+                              ? 'role-admin'
+                              : 'role-operator'}" th:text="${stockflowRole}">
+                    </span>
+                </div>
+                <form id="logout-form" th:action="@{/logout}" method="post">
+
+                    <button type="submit" class="btn-secondary">
+                        Cerrar sesión
+                    </button>
+
+                </form>
+
+            </div>
             <span>StockFlow v1.0</span>
             <small>Proyecto académico PWA</small>
         </div>
@@ -201,6 +226,7 @@
                             <th scope="col">Departamento</th>
                             <th scope="col">Ubicación</th>
                             <th scope="col">Observaciones</th>
+                            <th scope="col">Registrado por</th>
                         </tr>
                     </thead>
 
@@ -252,6 +278,12 @@
                             </td>
 
                             <td th:text="${m.observations}"></td>
+                            <td>
+                                <span class="user-badge" th:text="${m.registeredBy != null
+                                          ? m.registeredBy
+                                          : 'Sin usuario registrado'}">
+                                </span>
+                            </td>
 
                         </tr>
 

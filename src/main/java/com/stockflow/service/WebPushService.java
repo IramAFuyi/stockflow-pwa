@@ -1,8 +1,10 @@
 
 package com.stockflow.service;
 
+import com.stockflow.model.AppUser;
 import com.stockflow.model.PushSubscription;
 import com.stockflow.dto.PushSubscriptionRequest;
+import com.stockflow.repository.AppUserRepository;
 import com.stockflow.repository.PushSubscriptionRepository;
 
 import nl.martijndwars.webpush.PushService;
@@ -16,6 +18,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.transaction.annotation.Transactional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,6 +43,7 @@ public class WebPushService {
             "updates.push.services.mozilla.com");
 
     private final PushSubscriptionRepository repository;
+    private final AppUserRepository userRepository;
 
     private final String publicKey;
     private final String privateKey;
@@ -52,6 +56,7 @@ public class WebPushService {
 
     public WebPushService(
             PushSubscriptionRepository repository,
+            AppUserRepository userRepository,
 
             @Value("${stockflow.push.public-key}") String publicKey,
 
@@ -60,15 +65,21 @@ public class WebPushService {
             @Value("${stockflow.push.subject}") String subject) {
 
         this.repository = repository;
+        this.userRepository = userRepository;
         this.publicKey = publicKey;
         this.privateKey = privateKey;
         this.subject = subject;
 
         if (Security.getProvider("BC") == null) {
+
             Security.addProvider(
                     new BouncyCastleProvider());
         }
     }
+
+    // ===================================
+    // Configuracion VAPID
+    // ===================================
 
     public boolean isConfigured() {
 
@@ -89,6 +100,10 @@ public class WebPushService {
         return publicKey;
     }
 
+    // ===================================
+    // Validaciones de seguridad
+    // ===================================
+
     private boolean validEndpoint(String endpoint) {
 
         try {
@@ -104,6 +119,7 @@ public class WebPushService {
                             || uri.getPort() == 443);
 
         } catch (Exception ex) {
+
             return false;
         }
     }
@@ -124,14 +140,33 @@ public class WebPushService {
                     && auth.length == 16;
 
         } catch (Exception ex) {
+
             return false;
         }
     }
 
+    private AppUser findActiveUser(String username) {
+
+        return userRepository
+                .findByUsernameIgnoreCase(username)
+                .filter(AppUser::isActive)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.FORBIDDEN,
+                        "Usuario no autorizado"));
+    }
+
+    // ===================================
+    // Gestion de suscripciones
+    // ===================================
+
+    @Transactional
     public void subscribe(
-            PushSubscriptionRequest request) {
+            PushSubscriptionRequest request,
+            String username) {
 
         getPublicKey();
+
+        AppUser user = findActiveUser(username);
 
         if (!validEndpoint(request.endpoint())
                 || !validKeys(request)) {
@@ -141,24 +176,62 @@ public class WebPushService {
                     "Suscripcion push invalida");
         }
 
-        repository.save(
-                new PushSubscription(
-                        request.endpoint(),
-                        request.p256dh(),
-                        request.auth()));
+        int registered = repository.registerSubscription(
+                request.endpoint(),
+                request.p256dh(),
+                request.auth(),
+                user.getId());
+
+        if (registered == 0) {
+
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "La suscripcion no puede asociarse a esta cuenta");
+        }
     }
 
-    public void unsubscribe(String endpoint) {
-        repository.deleteById(endpoint);
+    @Transactional
+    public void unsubscribe(
+            String endpoint,
+            String username) {
+
+        AppUser user = findActiveUser(username);
+
+        repository.deleteOwnedSubscription(
+                endpoint,
+                user.getId());
     }
+
+    @Transactional(readOnly = true)
+    public boolean isSubscribed(
+            String endpoint,
+            String username) {
+
+        AppUser user = findActiveUser(username);
+
+        return repository.existsByEndpointAndUser_Id(
+                endpoint,
+                user.getId());
+    }
+
+    // ===================================
+    // Envio de notificaciones
+    // ===================================
 
     public void sendToAll(String message) {
 
         if (!isConfigured()) {
+
             return;
         }
 
-        for (PushSubscription subscription : repository.findAll()) {
+        // Enviar solamente a usuarios activos.
+        for (PushSubscription subscription : repository.findAllByUser_ActiveTrue()) {
+
+            if (Thread.currentThread().isInterrupted()) {
+
+                break;
+            }
 
             send(subscription, message);
         }
@@ -169,6 +242,7 @@ public class WebPushService {
             String message) {
 
         if (!validEndpoint(subscription.getEndpoint())) {
+
             return;
         }
 
@@ -197,7 +271,8 @@ public class WebPushService {
                     post.getURI())
                     .timeout(Duration.ofSeconds(15))
                     .POST(
-                            HttpRequest.BodyPublishers.ofByteArray(body));
+                            HttpRequest.BodyPublishers
+                                    .ofByteArray(body));
 
             for (var header : post.getAllHeaders()) {
 

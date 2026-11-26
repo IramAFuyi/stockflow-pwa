@@ -3,7 +3,18 @@
 
 const StockFlowDB = (() => {
 
-    const DB_NAME = "stockflow-db";
+    const account = window.StockFlowAccount;
+
+    if (!account) {
+
+        throw new Error(
+            "No se puede abrir IndexedDB sin identificar al usuario."
+        );
+    }
+
+    const DB_NAME =
+        "stockflow-db-" + encodeURIComponent(account);
+
     const DB_VERSION = 1;
 
     let dbPromise = null;

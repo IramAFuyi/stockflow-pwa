@@ -19,7 +19,7 @@ const fields = {
 // Peticiones hacia la API REST
 async function productRequest(url, options = {}) {
 
-    const response = await fetch(url, options);
+    const response = await stockflowFetch(url, options);
 
     if (!response.ok) {
 

@@ -12,6 +12,10 @@ public class PushSubscription {
     @Column(length = 2048)
     private String endpoint;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private AppUser user;
+
     @Column(nullable = false, length = 255)
     private String p256dh;
 
@@ -37,6 +41,10 @@ public class PushSubscription {
 
     public String getEndpoint() {
         return endpoint;
+    }
+
+    public AppUser getUser() {
+        return user;
     }
 
     public String getP256dh() {

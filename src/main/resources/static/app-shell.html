@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta name="theme-color" content="#0f172a">
+
+    <meta name="stockflow-offline-shell" content="true">
+
+    <title>StockFlow | Modo offline</title>
+
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" href="/icons/icon.svg">
+
+    <script src="/js/offline-context.js" defer></script>
+    <script src="/js/app-shell.js" defer></script>
+
+</head>
+
+<body class="shell-page">
+
+    <header class="shell-header">
+
+        <img src="/icons/icon-192.png" alt="StockFlow" width="52" height="52">
+
+        <div>
+            <h1>StockFlow</h1>
+            <small>Modo sin conexión</small>
+        </div>
+
+    </header>
+
+    <p id="shell-locked" role="status">
+        Comprobando acceso offline...
+    </p>
+
+    <main id="shell-content" hidden>
+
+        <div class="shell-navigation">
+
+            <a href="/" class="btn-secondary">
+                Dashboard
+            </a>
+
+            <a href="/movements" class="btn-secondary">
+                Movimientos
+            </a>
+
+            <button id="shell-reconnect" class="btn-primary">
+                Reconectar
+            </button>
+
+        </div>
+
+        <section class="shell-panel">
+
+            <strong id="shell-account"></strong>
+
+            <p id="shell-last-sync"></p>
+
+            <p id="shell-message" aria-live="polite">
+                Trabajando con datos locales.
+            </p>
+
+        </section>
+
+        <section id="shell-dashboard" hidden>
+
+            <div class="shell-stats">
+
+                <article class="shell-panel">
+                    <small>Productos</small>
+                    <h2 id="shell-products">0</h2>
+                </article>
+
+                <article class="shell-panel">
+                    <small>Unidades estimadas</small>
+                    <h2 id="shell-units">0</h2>
+                </article>
+
+                <article class="shell-panel">
+                    <small>Stock bajo</small>
+                    <h2 id="shell-low">0</h2>
+                </article>
+
+                <article class="shell-panel">
+                    <small>Operaciones pendientes</small>
+                    <h2 id="shell-pending">0</h2>
+                </article>
+
+            </div>
+
+            <section class="shell-panel">
+
+                <h2>Inventario local</h2>
+
+                <div class="shell-table">
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>SKU</th>
+                                <th>Producto</th>
+                                <th>Categoría</th>
+                                <th>Stock estimado</th>
+                                <th>Stock mínimo</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="shell-product-table">
+                        </tbody>
+                    </table>
+
+                </div>
+
+            </section>
+
+        </section>
+
+        <section id="shell-movements" hidden>
+
+            <section class="shell-panel">
+
+                <h2>Registrar movimiento offline</h2>
+
+                <form id="shell-form" class="shell-form">
+
+                    <label for="shell-product">
+                        Producto
+                    </label>
+
+                    <select id="shell-product" required>
+                    </select>
+
+                    <label for="shell-type">Tipo</label>
+
+                    <select id="shell-type">
+                        <option value="IN">Entrada</option>
+                        <option value="OUT">Salida</option>
+                    </select>
+
+                    <label for="shell-quantity">
+                        Cantidad
+                    </label>
+
+                    <input id="shell-quantity" type="number" min="1" max="2147483647" step="1" value="1" required>
+
+                    <label for="shell-department">
+                        Departamento
+                    </label>
+
+                    <select id="shell-department"></select>
+
+                    <label for="shell-observations">
+                        Observaciones
+                    </label>
+
+                    <textarea id="shell-observations" maxlength="500" rows="3"></textarea>
+
+                    <p id="shell-estimate"></p>
+
+                    <button type="button" id="shell-location" class="btn-secondary">
+                        Obtener ubicación
+                    </button>
+
+                    <small id="shell-location-status">
+                        Ubicación no registrada.
+                    </small>
+
+                    <button type="submit" id="shell-save" class="btn-primary">
+                        Guardar movimiento
+                    </button>
+
+                </form>
+
+            </section>
+
+            <section class="shell-panel">
+
+                <h2>Historial confirmado</h2>
+
+                <div class="shell-table">
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Producto</th>
+                                <th>Tipo</th>
+                                <th>Cantidad</th>
+                                <th>Existencias</th>
+                                <th>Departamento</th>
+                                <th>Registrado por</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="shell-movement-table">
+                        </tbody>
+                    </table>
+
+                </div>
+
+            </section>
+
+        </section>
+
+        <section class="shell-panel">
+
+            <h2>Cola de sincronización</h2>
+
+            <div id="shell-queue"></div>
+
+        </section>
+
+    </main>
+
+</body>
+
+</html>

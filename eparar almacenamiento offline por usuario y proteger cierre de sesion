@@ -1,0 +1,12 @@
+ .../com/stockflow/config/AccountBindingFilter.java | 96 [32m++++++++++++++++++++++[m
+ .../java/com/stockflow/config/SecurityConfig.java  |  5 [32m+[m[31m-[m
+ .../stockflow/controller/SessionViewAdvice.java    | 19 [32m+++++[m
+ src/main/resources/static/css/styles.css           | 21 [32m+++++[m
+ src/main/resources/static/js/indexed-db.js         | 13 [32m++[m[31m-[m
+ src/main/resources/static/js/offline-data.js       |  2 [32m+[m[31m-[m
+ src/main/resources/static/js/pwa.js                | 78 [32m+++++++++++++++++[m[31m-[m
+ src/main/resources/static/js/security.js           | 25 [32m++++++[m
+ src/main/resources/static/sw.js                    |  2 [32m+[m[31m-[m
+ src/main/resources/templates/dashboard.html        | 10 [32m++[m[31m-[m
+ src/main/resources/templates/movements.html        | 18 [32m++++[m
+ 11 files changed, 279 insertions(+), 10 deletions(-)

@@ -20,11 +20,8 @@ public class LowStockListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleLowStock(LowStockEvent event) {
 
-        String message = String.format(
-                "%s alcanzo su stock minimo. " +
-                        "Quedan %d unidades disponibles.",
-                event.productName(),
-                event.stock());
+        String message = "Un producto alcanzo su stock minimo. " +
+                "Consulta StockFlow para revisar las existencias.";
 
         pushService.sendToAll(message);
     }
