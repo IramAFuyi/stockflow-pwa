@@ -79,6 +79,10 @@
                     <strong th:text="${stockflowAccount}">
                         Usuario
                     </strong>
+                    <span class="role-badge" th:classappend="${stockflowIsAdmin
+                              ? 'role-admin'
+                              : 'role-operator'}" th:text="${stockflowRole}">
+                    </span>
                 </div>
                 <form id="logout-form" th:action="@{/logout}" method="post">
                     <button type="submit" class="btn-secondary">
@@ -242,8 +246,7 @@
                     <p>Consulta y administra las existencias actuales</p>
                 </div>
 
-                <button type="button" id="new-product" class="btn-primary">
-                    + Nuevo producto
+                <button type="button" id="new-product" class="btn-primary" th:if="${stockflowIsAdmin}"> + Nuevo producto
                 </button>
             </div>
 
@@ -289,7 +292,9 @@
                             <th scope="col">Existencias</th>
                             <th scope="col">Mínimo</th>
                             <th scope="col">Estado</th>
-                            <th scope="col">Acciones</th>
+                            <th scope="col" th:if="${stockflowIsAdmin}">
+                                Acciones
+                            </th>
                         </tr>
                     </thead>
 
@@ -333,7 +338,7 @@
                                     Disponible
                                 </span>
                             </td>
-                            <td>
+                            <td th:if="${stockflowIsAdmin}">
                                 <div class="table-actions">
 
                                     <button type="button" class="btn-edit" th:attr="data-id=${product.id}">
@@ -367,7 +372,7 @@
 
     </main>
 
-    <dialog id="product-modal" class="product-modal">
+    <dialog id="product-modal" class="product-modal" th:if="${stockflowIsAdmin}">
 
         <div class="modal-header">
             <div>
@@ -458,7 +463,7 @@
 
     </dialog>
 
-    <script th:src="@{/js/products.js}" defer></script>
+    <script th:if="${stockflowIsAdmin}" th:src="@{/js/products.js}" defer></script>
 
 </body>
 

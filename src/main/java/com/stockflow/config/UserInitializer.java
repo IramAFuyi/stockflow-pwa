@@ -20,13 +20,22 @@ public class UserInitializer implements CommandLineRunner {
     private final PasswordEncoder passwordEncoder;
 
     @Value("${stockflow.admin.username}")
-    private String username;
+    private String adminUsername;
 
     @Value("${stockflow.admin.password}")
-    private String password;
+    private String adminPassword;
 
     @Value("${stockflow.admin.full-name}")
-    private String fullName;
+    private String adminFullName;
+
+    @Value("${stockflow.operator.username}")
+    private String operatorUsername;
+
+    @Value("${stockflow.operator.password}")
+    private String operatorPassword;
+
+    @Value("${stockflow.operator.full-name}")
+    private String operatorFullName;
 
     public UserInitializer(
             AppUserRepository repository,
@@ -39,30 +48,68 @@ public class UserInitializer implements CommandLineRunner {
     @Override
     public void run(String... args) {
 
+        createUserIfMissing(
+                adminUsername,
+                adminPassword,
+                adminFullName,
+                UserRole.ADMIN);
+
+        if (!operatorPassword.isBlank()) {
+
+            createUserIfMissing(
+                    operatorUsername,
+                    operatorPassword,
+                    operatorFullName,
+                    UserRole.OPERATOR);
+        }
+    }
+
+    private void createUserIfMissing(
+            String username,
+            String password,
+            String fullName,
+            UserRole role) {
+
         String normalizedUsername = username.trim().toLowerCase(Locale.ROOT);
 
-        if (repository.existsByUsernameIgnoreCase(
-                normalizedUsername)) {
+        if (normalizedUsername.isBlank() ||
+                normalizedUsername.length() > 80) {
+
+            throw new IllegalStateException(
+                    "Nombre de usuario inicial invalido");
+        }
+
+        var existing = repository
+                .findByUsernameIgnoreCase(normalizedUsername);
+
+        if (existing.isPresent()) {
+
+            if (existing.get().getRole() != role) {
+
+                throw new IllegalStateException(
+                        "El usuario inicial tiene un rol diferente");
+            }
 
             return;
         }
 
         if (password.length() < 12 ||
-                password.getBytes(StandardCharsets.UTF_8).length > 72) {
+                password.getBytes(
+                        StandardCharsets.UTF_8).length > 72) {
 
             throw new IllegalStateException(
-                    "Configura una contrasena ADMIN_PASSWORD valida");
+                    "Configura una contrasena valida para " + role);
         }
 
-        AppUser administrator = new AppUser(
+        AppUser user = new AppUser(
                 normalizedUsername,
                 passwordEncoder.encode(password),
                 fullName,
-                UserRole.ADMIN);
+                role);
 
-        repository.save(administrator);
+        repository.save(user);
 
         System.out.println(
-                "[StockFlow] Usuario administrador creado");
+                "[StockFlow] Usuario " + role + " creado");
     }
 }

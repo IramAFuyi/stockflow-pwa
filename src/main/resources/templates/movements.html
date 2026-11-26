@@ -79,6 +79,10 @@
                     <strong th:text="${stockflowAccount}">
                         Usuario
                     </strong>
+                    <span class="role-badge" th:classappend="${stockflowIsAdmin
+                              ? 'role-admin'
+                              : 'role-operator'}" th:text="${stockflowRole}">
+                    </span>
                 </div>
                 <form id="logout-form" th:action="@{/logout}" method="post">
 

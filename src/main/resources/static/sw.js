@@ -1,5 +1,5 @@
 
-const CACHE_NAME = "stockflow-v13";
+const CACHE_NAME = "stockflow-v14";
 
 const STATIC_RESOURCES = [
     "/offline.html",
